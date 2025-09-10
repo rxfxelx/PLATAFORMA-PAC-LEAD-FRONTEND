@@ -142,7 +142,7 @@ async function sendWhatsAppTest() {
 // Define a base de backend a partir de uma variável global se disponível. Caso
 // contrário, use a instância de produção do Pac‑Lead. Remove barras
 // consecutivas no final para evitar double-slash nas requisições.
-const BACKEND_BASE = (window.__BACKEND_BASE__ || 'https://pac-lead-production.up.railway.app').replace(/\/+$/, '');
+const BACKEND_BASE = (window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app').replace(/\/+$/, '');
 const VISION_UPLOAD_URL = BACKEND_BASE + '/api/vision/upload';
 
 // Define cabeçalhos padrão utilizados em todas as chamadas à API.
