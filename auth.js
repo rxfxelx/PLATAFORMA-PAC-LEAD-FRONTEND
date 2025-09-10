@@ -11,7 +11,7 @@
   // Determina a URL base do backend. Permite configuração dinâmica
   // via window.__BACKEND_BASE__ definida pela página. Usa uma URL
   // de fallback apenas como exemplo; altere conforme seu ambiente.
-  const BASE = (window.__BACKEND_BASE__ || 'https://pac-lead-production.up.railway.app').replace(/\/+$/, '');
+  const BASE = (window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app').replace(/\/+$/, '');
   // Prefixo opcional para rotas da API (ex: '/api'); pode ser vazio
   const PREFIX = (typeof window.__API_PREFIX__ !== 'undefined' ? window.__API_PREFIX__ : '/api');
   const API = (endpoint) => `${BASE}${PREFIX}${endpoint}`;
