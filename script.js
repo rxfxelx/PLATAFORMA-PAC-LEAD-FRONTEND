@@ -9,6 +9,46 @@ let waCurrentInstance = null;
 let waCurrentToken = null;
 let waPollInterval = null;
 
+// ===== BACKEND URLs =====
+// Define a base de backend a partir de uma variável global se disponível. Caso
+// contrário, use a instância de produção do Pac‑Lead. Remove barras
+// consecutivas no final para evitar double-slash nas requisições.
+const BACKEND_BASE = (window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app').replace(/\/+$/, '');
+// URL do AGENTE PackLead (para receber o webhook diretamente)
+const AGENT_BACKEND_BASE = 'https://paclead-agente-backend-production.up.railway.app';
+const VISION_UPLOAD_URL = BACKEND_BASE + '/api/vision/upload';
+
+// Define cabeçalhos padrão utilizados em todas as chamadas à API.
+// Os valores de organização e fluxo, bem como o token JWT, são lidos do
+// localStorage para que reflitam o usuário autenticado. Se não houver
+// valores armazenados (por exemplo, antes do login), os cabeçalhos de
+// org e flow são definidos como "1". A chave Authorization só é
+// enviada quando um token válido existir.
+const defaultHeaders = (() => {
+  let orgId = '1';
+  let flowId = '1';
+  let authHeader;
+  try {
+    const storedOrg = localStorage.getItem('org_id');
+    const storedFlow = localStorage.getItem('flow_id');
+    const token = localStorage.getItem('token');
+    if (storedOrg) orgId = storedOrg;
+    if (storedFlow) flowId = storedFlow;
+    if (token) authHeader = `Bearer ${token}`;
+  } catch (err) {
+    // Se localStorage não estiver acessível, permanecem os valores padrões.
+  }
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Org-ID': orgId,
+    'X-Flow-ID': flowId
+  };
+  if (authHeader) {
+    headers['Authorization'] = authHeader;
+  }
+  return headers;
+})();
+
 // Cria uma nova instância na uazapi via backend. Atualiza o formulário
 // com o ID e token retornados e inicia o monitoramento do status/QR.
 async function createWhatsAppInstance() {
@@ -28,16 +68,42 @@ async function createWhatsAppInstance() {
       throw new Error(text || 'Erro ao criar instância');
     }
     const data = await res.json();
-    // Espera-se que o backend retorne { instance: <id>, token: <token> }
-    waCurrentInstance = data.instance || data.name || name;
+
+    // ⬇️ mapeia corretamente o ID retornado pelo backend ({ instanceId, token, connect })
+    waCurrentInstance = data.instanceId || data.instance || data.name || name;
     waCurrentToken = data.token;
+
     // Preenche campos visíveis
     const infoDiv = document.getElementById('wa-instance-info');
-    infoDiv.style.display = 'block';
-    document.getElementById('wa-instance-id').value = waCurrentInstance;
-    document.getElementById('wa-instance-token').value = waCurrentToken;
-    // Define a URL de webhook sugerida. A rota /webhooks/wa/{instance} aceita eventos.
-    document.getElementById('wa-webhook-url').value = `${BACKEND_BASE}/webhooks/wa/${encodeURIComponent(waCurrentInstance)}`;
+    if (infoDiv) infoDiv.style.display = 'block';
+    const idEl = document.getElementById('wa-instance-id');
+    const tokEl = document.getElementById('wa-instance-token');
+    if (idEl) idEl.value = waCurrentInstance || '';
+    if (tokEl) tokEl.value = waCurrentToken || '';
+
+    // Sugerir webhook direto no AGENTE PackLead
+    const webhookEl = document.getElementById('wa-webhook-url');
+    if (webhookEl) {
+      webhookEl.value = `${AGENT_BACKEND_BASE}/webhook/uazapi`;
+    }
+
+    // Se a criação já retornou um payload de conexão, tenta exibir QR imediatamente
+    try {
+      const statusEl = document.getElementById('wa-status');
+      const qrImg = document.getElementById('wa-qr-code');
+      const c = data.connect || {};
+      const state = c.status || c.state || data.status || data.state || 'connecting';
+      if (statusEl) statusEl.textContent = state;
+
+      // Pode vir base64/dataURL diretamente, ou apenas "code" (texto)
+      const qr = c.qrcode || c.qrCode || c.qr_code || c.qrbase64 || c.qrBase64 || c.code;
+      if (qr && typeof qr === 'string' && qr.startsWith('data:image')) {
+        if (qrImg) { qrImg.src = qr; qrImg.style.display = 'block'; }
+      } else {
+        if (qrImg) qrImg.style.display = 'none';
+      }
+    } catch (_) { /* silencioso */ }
+
     // Inicia monitoramento de status/QR
     if (waPollInterval) clearInterval(waPollInterval);
     await updateWhatsAppStatus();
@@ -63,18 +129,36 @@ async function updateWhatsAppStatus() {
     }
     const data = await res.json();
     const statusEl = document.getElementById('wa-status');
-    // Extrai o estado da resposta. Alguns provedores retornam `status` ou `state`.
-    const state = data.status || data.state || (data.instance && data.instance.status);
-    statusEl.textContent = state || JSON.stringify(data);
     const qrImg = document.getElementById('wa-qr-code');
-    // QR code pode vir em data.qrcode ou data.qrCode
-    const qr = data.qrcode || data.qrCode || data.qr_code;
-    if (state && state.toLowerCase() === 'connected') {
+
+    // Normaliza estado (pode vir em vários lugares)
+    const rawState =
+      data.status ||
+      data.state ||
+      (data.instance && data.instance.status) ||
+      (data.connect && data.connect.status);
+
+    if (statusEl) statusEl.textContent = rawState || 'connecting';
+
+    const state = (typeof rawState === 'string') ? rawState.toLowerCase() : '';
+
+    if (state === 'connected') {
       if (waPollInterval) clearInterval(waPollInterval);
-      qrImg.style.display = 'none';
-    } else if (qr) {
-      qrImg.src = qr;
-      qrImg.style.display = 'block';
+      if (qrImg) qrImg.style.display = 'none';
+      return;
+    }
+
+    // Procura QR code em vários formatos/caminhos
+    const qr =
+      data.qrcode || data.qrCode || data.qr_code || data.qrbase64 || data.qrBase64 || data.code ||
+      (data.connect && (data.connect.qrcode || data.connect.qrCode || data.connect.qr_code || data.connect.qrbase64 || data.connect.qrBase64 || data.connect.code));
+
+    // Renderiza quando for dataURL/base64; se vier apenas "code" textual, o /status
+    // normalmente passa a retornar base64 após alguns ciclos.
+    if (qr && typeof qr === 'string' && qr.startsWith('data:image')) {
+      if (qrImg) { qrImg.src = qr; qrImg.style.display = 'block'; }
+    } else {
+      if (qrImg) qrImg.style.display = 'none';
     }
   } catch (err) {
     console.error(err);
@@ -137,44 +221,6 @@ async function sendWhatsAppTest() {
     alert('Falha ao enviar mensagem: ' + err.message);
   }
 }
-
-// ===== BACKEND URLs =====
-// Define a base de backend a partir de uma variável global se disponível. Caso
-// contrário, use a instância de produção do Pac‑Lead. Remove barras
-// consecutivas no final para evitar double-slash nas requisições.
-const BACKEND_BASE = (window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app').replace(/\/+$/, '');
-const VISION_UPLOAD_URL = BACKEND_BASE + '/api/vision/upload';
-
-// Define cabeçalhos padrão utilizados em todas as chamadas à API.
-// Os valores de organização e fluxo, bem como o token JWT, são lidos do
-// localStorage para que reflitam o usuário autenticado. Se não houver
-// valores armazenados (por exemplo, antes do login), os cabeçalhos de
-// org e flow são definidos como "1". A chave Authorization só é
-// enviada quando um token válido existir.
-const defaultHeaders = (() => {
-  let orgId = '1';
-  let flowId = '1';
-  let authHeader;
-  try {
-    const storedOrg = localStorage.getItem('org_id');
-    const storedFlow = localStorage.getItem('flow_id');
-    const token = localStorage.getItem('token');
-    if (storedOrg) orgId = storedOrg;
-    if (storedFlow) flowId = storedFlow;
-    if (token) authHeader = `Bearer ${token}`;
-  } catch (err) {
-    // Se localStorage não estiver acessível, permanecem os valores padrões.
-  }
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Org-ID': orgId,
-    'X-Flow-ID': flowId
-  };
-  if (authHeader) {
-    headers['Authorization'] = authHeader;
-  }
-  return headers;
-})();
 
 // ==== Funções de integração com o backend ====
 
