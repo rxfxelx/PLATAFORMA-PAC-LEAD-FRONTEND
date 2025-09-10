@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>
+  /* Configuração fixa do domínio do backend.
+     Não use location.origin aqui, pois o front e o back estão em domínios diferentes.
+     Se o endereço do seu backend mudar, edite a URL abaixo.
+  */
+  window.__BACKEND_BASE__ = "https://pac-lead-production.up.railway.app";
+  window.__API_PREFIX__ = "/api";
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helsen IA - Dashboard</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- AdminLTE CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- CSS Customizado -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Melhorada verificação de autenticação para mobile -->
+  <script>
+    (function() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          window.location.href = 'login.html';
+        }
+      } catch (_) {
+        window.location.href = 'login.html';
+      }
+    })();
+  </script>
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+    
+    <!-- Navbar melhorado para mobile -->
+    <nav class="main-header navbar navbar-expand navbar-dark">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <!-- Adicionando id para controle JavaScript -->
+          <a class="nav-link" id="sidebar-toggle" href="#" role="button">
+            <i class="fas fa-bars"></i>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- Logo mobile no navbar -->
+      <div class="navbar-brand d-block d-lg-none">
+        <img src="logoprincipal.png" alt="Helsen IA" class="navbar-brand-image">
+      </div>
+    </nav>
+
+    <!-- Adicionando overlay para fechar menu mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Sidebar melhorado para responsividade -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-2">
+      <div class="sidebar-brand">
+        <img src="logoprincipal.png" alt="Helsen IA" class="brand-image">
+      </div>
+      <div class="sidebar">
+        <nav class="mt-2">
+          <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+            <li class="nav-item">
+              <!-- Adicionando classe mobile-nav-link para fechar menu após clique -->
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('analysis')">
+                <i class="nav-icon fas fa-chart-line"></i>
+                <p>Análise</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('company')">
+                <i class="nav-icon fas fa-building"></i>
+                <p>Empresa</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('agent-config')">
+                <i class="nav-icon fas fa-robot"></i>
+                <p>Agente IA</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('products')">
+                <i class="nav-icon fas fa-boxes"></i>
+                <p>Produtos</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('payments')">
+                <i class="nav-icon fas fa-credit-card"></i>
+                <p>Pagamentos</p>
+              </a>
+            </li>
+            <!-- Item de menu para integração com WhatsApp -->
+            <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('wa')">
+                <i class="nav-icon fab fa-whatsapp"></i>
+                <p>WhatsApp</p>
+              </a>
+            </li>
+            <li class="nav-item logout">
+              <a href="#" class="nav-link mobile-nav-link" onclick="logout()">
+                <i class="nav-icon fas fa-sign-out-alt"></i>
+                <p>Sair</p>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+      <div class="content-header">
+        <div class="container-fluid">
+          <!-- Seção Meu Agente IA -->
+          <div id="agent-config" class="content-section">
+            <div class="content-header">
+              <div class="header-text">
+                <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+                <h1 class="page-title"><i class="fas fa-robot mr-2"></i> Agente IA</h1>
+                <p class="page-subtitle">Configure seu agente de IA personalizado</p>
+              </div>
+            </div>
+
+            <!-- Navegação por abas responsiva -->
+            <ul class="nav nav-tabs nav-tabs-responsive" id="agentTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="perfil-tab" data-bs-toggle="tab" data-bs-target="#perfil" type="button" role="tab">
+                  <i class="fas fa-user d-lg-none"></i>
+                  <span class="d-none d-lg-inline">Perfil</span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="comportamento-tab" data-bs-toggle="tab" data-bs-target="#comportamento" type="button" role="tab">
+                  <i class="fas fa-cogs d-lg-none"></i>
+                  <span class="d-none d-lg-inline">Comportamento</span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="conversa-ativacao-tab" data-bs-toggle="tab" data-bs-target="#conversa-ativacao" type="button" role="tab">
+                  <i class="fas fa-comments d-lg-none"></i>
+                  <span class="d-none d-lg-inline">Conversa & Ativação</span>
+                </button>
+              </li>
+            </ul>
+
+            <div class="tab-content" id="agentTabsContent">
+              <!-- Aba Perfil -->
+              <div class="tab-pane fade show active" id="perfil" role="tabpanel">
+                <div class="card">
+                  <div class="card-body">
+                    <form id="agent-config-form">
+                      <!-- Grid responsivo melhorado -->
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <div class="form-group">
+                            <label for="agent-avatar" class="form-label">
+                              <i class="fas fa-user-circle mr-2"></i>
+                              Selecionar Avatar
+                            </label>
+                            <input type="file" class="form-control" id="agent-avatar" accept="image/*">
+                            <small class="form-text">Formatos aceitos: JPG, PNG, GIF (máx. 2MB)</small>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-group">
+                            <label for="agent-name" class="form-label">
+                              <i class="fas fa-signature mr-2"></i>
+                              Nome do Agente
+                            </label>
+                            <input type="text" class="form-control" id="agent-name" placeholder="Ex: Maria Vendas">
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <div class="form-group">
+                            <label for="communication-style" class="form-label">
+                              <i class="fas fa-comments mr-2"></i>
+                              Forma de Comunicação
+                            </label>
+                            <select class="form-control" id="communication-style">
+                              <option value="normal">Normal</option>
+                              <option value="formal">Formal</option>
+                              <option value="descontraido">Descontraído</option>
+                              <option value="amigavel">Amigável</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-group">
+                            <label for="agent-sector" class="form-label">
+                              <i class="fas fa-industry mr-2"></i>
+                              Selecione Setor/Indústria
+                            </label>
+                            <select class="form-control" id="agent-sector">
+                              <option value="">Selecione uma opção</option>
+                              <option value="tecnologia">Tecnologia & Inovação</option>
+                              <option value="industria">Indústria & Produção</option>
+                              <option value="comercio">Comércio & Varejo</option>
+                              <option value="moda">Moda, Roupas & Vestuário</option>
+                              <option value="servicos">Serviços Profissionais</option>
+                              <option value="saude">Saúde, Bem-estar & Veterinária</option>
+                              <option value="educacao">Educação & Treinamento</option>
+                              <option value="alimentacao">Alimentação, Lazer & Entretenimento</option>
+                              <option value="agronegocio">Agronegócio & Agropecuária</option>
+                              <option value="financas">Finanças & Soluções Digitais</option>
+                              <option value="construcao">Construção, Imóveis & Decoração</option>
+                              <option value="transporte">Transporte, Logística & Mobilidade</option>
+                              <option value="automotivo">Automotivo & Transporte Individual</option>
+                              <option value="comunicacao">Comunicação, Publicidade & Marketing</option>
+                              <option value="artes">Artes, Cultura & Design</option>
+                              <option value="publico">Setor Público, ONGs & Religiosos</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="agent-profile-type" class="form-label">
+                          <i class="fas fa-user-tag mr-2"></i>
+                          Descreva como deve ser o Perfil deste Agente ou selecione uma opção
+                        </label>
+                        <select class="form-control" id="agent-profile-type">
+                          <option value="">Selecione uma opção</option>
+                          <option value="consultivo">Consultivo e Profissional</option>
+                          <option value="amigavel">Amigável e Engajador</option>
+                          <option value="vendedor">Vendedor Direto e Persuasivo</option>
+                          <option value="acolhedor">Acolhedor e Paciente</option>
+                          <option value="executivo">Executivo e Objetivo</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <textarea class="form-control" id="agent-profile-custom" rows="4" placeholder="Ou digite uma descrição personalizada..."></textarea>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- Botões de navegação responsivos -->
+                <div class="form-actions d-flex flex-column flex-md-row justify-content-between gap-2">
+                  <button type="button" class="btn btn-outline-secondary" onclick="previousTab()" disabled>
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Anterior
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="nextTab()">
+                    Próximo
+                    <i class="fas fa-arrow-right ml-2"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Aba Comportamento -->
+              <div class="tab-pane fade" id="comportamento" role="tabpanel">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-cogs mr-2"></i>
+                      Defina como seu Agente de IA deve se comportar e agir em situações específicas
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="behavior-rule">
+                      <div class="form-group">
+                        <label class="form-label">
+                          <i class="fas fa-lightbulb mr-2"></i>
+                          Intenção
+                        </label>
+                        <input type="text" class="form-control" placeholder="Quando finalizar um atendimento/venda, o bot deve:" value="Quando finalizar um atendimento/venda, o bot deve:">
+                      </div>
+
+                      <div class="form-group">
+                        <label class="form-label">
+                          <i class="fas fa-tasks mr-2"></i>
+                          Ação
+                        </label>
+                        <div class="action-options">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="whatsapp-notification" onchange="toggleWhatsAppConfig()">
+                            <label class="form-check-label" for="whatsapp-notification">
+                              Avisar no WhatsApp que a venda foi realizada
+                            </label>
+                          </div>
+                          <div id="whatsapp-config" class="mt-2" style="display: none;">
+                            <input type="text" class="form-control" placeholder="Número do WhatsApp ou configuração da API">
+                          </div>
+
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="site-link" onchange="toggleSiteLinkConfig()">
+                            <label class="form-check-label" for="site-link">
+                              Enviar o link do site
+                            </label>
+                          </div>
+                          <div id="site-link-config" class="mt-2" style="display: none;">
+                            <input type="url" class="form-control" placeholder="URL do site">
+                          </div>
+
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="product-link" onchange="toggleProductLinkConfig()">
+                            <label class="form-check-label" for="product-link">
+                              Enviar link do produto
+                            </label>
+                          </div>
+                          <div id="product-link-config" class="mt-2" style="display: none;">
+                            <input type="url" class="form-control" placeholder="URL do produto">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions d-flex flex-column flex-md-row justify-content-between gap-2">
+                  <button type="button" class="btn btn-outline-secondary" onclick="previousTab()">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Anterior
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="nextTab()">
+                    Próximo
+                    <i class="fas fa-arrow-right ml-2"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Aba Conversa & Ativação -->
+              <div class="tab-pane fade" id="conversa-ativacao" role="tabpanel">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-file-upload mr-2"></i>
+                      Envio de documentos e instruções adicionais para enriquecer o atendimento
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <!-- Layout responsivo para upload de arquivos -->
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <div class="form-group">
+                          <label class="form-label">
+                            <i class="fas fa-file-pdf mr-2"></i>
+                            Importar PDF
+                          </label>
+                          <input type="file" class="form-control" accept=".pdf">
+                          <small class="form-text">Nenhum arquivo escolhido</small>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <div class="form-group">
+                          <label class="form-label">
+                            <i class="fas fa-question-circle mr-2"></i>
+                            Inserir Perguntas e Respostas
+                          </label>
+                          <textarea class="form-control" rows="4" placeholder="Cole suas perguntas e respostas aqui (Ex: Q: Qual o horário de funcionamento? A: Das 9h às 18h)."></textarea>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        Anexe ou descreva outras instruções, catálogos ou materiais que o bot deve usar durante a conversa
+                      </label>
+                      <textarea class="form-control" rows="5" placeholder="Descreva aqui..."></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions d-flex flex-column flex-md-row justify-content-between gap-2">
+                  <button type="button" class="btn btn-outline-secondary" onclick="previousTab()">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Anterior
+                  </button>
+                  <button type="button" class="btn btn-success btn-lg" id="gravar-perfil" onclick="saveProfile()">
+                    <i class="fas fa-save mr-2"></i>
+                    Gravar Perfil
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção Análise -->
+          <div id="analysis" class="content-section" style="display: none;">
+            <div class="content-header">
+              <div class="header-text">
+                <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+                <h1 class="page-title"><i class="fas fa-chart-line mr-2"></i> Análise de Performance</h1>
+                <p class="page-subtitle">Acompanhe o desempenho do seu agente de IA</p>
+              </div>
+            </div>
+            
+            <!-- Métricas principais com melhor responsividade -->
+            <div class="row main-metrics-row g-3">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="metric-card clickable-card" id="conversations-card" onclick="openMetricModal('conversations-modal')">
+                  <div class="metric-content">
+                    <div class="metric-number" id="conversations-count">1,247</div>
+                    <div class="metric-label">Conversas Totais</div>
+                  </div>
+                  <div class="metric-icon">
+                    <i class="fas fa-comments"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="metric-card clickable-card" id="leads-card" onclick="openMetricModal('leads-modal')">
+                  <div class="metric-content">
+                    <div class="metric-number" id="leads-count">342</div>
+                    <div class="metric-label">Leads</div>
+                  </div>
+                  <div class="metric-icon">
+                    <i class="fas fa-user-plus"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="metric-card clickable-card" id="sales-card" onclick="openMetricModal('sales-modal')">
+                  <div class="metric-content">
+                    <div class="metric-number" id="sales-count">89</div>
+                    <div class="metric-label">Vendas Realizadas</div>
+                  </div>
+                  <div class="metric-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="metric-card clickable-card" id="satisfaction-card" onclick="openMetricModal('satisfaction-modal')">
+                  <div class="metric-content">
+                    <div class="metric-number" id="conversion-rate">87%</div>
+                    <div class="metric-label">Taxa de Conversão</div>
+                  </div>
+                  <div class="metric-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Métricas secundárias responsivas -->
+            <div class="row secondary-metrics-row g-3">
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="info-card">
+                  <div class="info-icon bg-primary">
+                    <i class="fas fa-users"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Leads Recuperados</div>
+                    <div class="info-value" id="recovered-leads-value">892</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="info-card">
+                  <div class="info-icon bg-info">
+                    <i class="fas fa-message"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Horário de Conversão</div>
+                    <div class="info-value" id="best-time-range">19:00-20:00</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="info-card">
+                  <div class="info-icon bg-success">
+                    <i class="fas fa-robot"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Produto mais falado</div>
+                    <div class="info-value" id="top-product-name">Pac Lead</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gráfico de performance -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-chart-area mr-2"></i>
+                  Performance dos Últimos 30 Dias
+                </h3>
+              </div>
+              <div class="card-body">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção Empresa -->
+          <div id="company" class="content-section" style="display: none;">
+            <div class="content-header">
+              <div class="header-text">
+                <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+                <h1 class="page-title"><i class="fas fa-building mr-2"></i> Empresa</h1>
+                <p class="page-subtitle">Informações da empresa</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body">
+                <form id="company-form">
+                  <!-- Grid responsivo melhorado para formulário da empresa -->
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label for="company-razao" class="form-label">Razão Social</label>
+                      <input type="text" class="form-control" id="company-razao" placeholder="Digite a razão social">
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label for="company-fantasia" class="form-label">Nome Fantasia</label>
+                      <input type="text" class="form-control" id="company-fantasia" placeholder="Nome fantasia">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-cnpj" class="form-label">CNPJ / CPF</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="company-cnpj" placeholder="00.000.000/0000-00">
+                        <button class="btn btn-primary d-none d-sm-block company-cnpj-search-btn" type="button">Buscar CNPJ</button>
+                        <button class="btn btn-primary d-sm-none company-cnpj-search-btn" type="button">
+                          <i class="fas fa-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-insc" class="form-label">Insc. Estadual</label>
+                      <input type="text" class="form-control" id="company-insc" placeholder="Isento">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-segment" class="form-label">Segmento</label>
+                      <select id="company-segment" class="form-control">
+                        <option value="">Selecione...</option>
+                        <option value="industria">Indústria</option>
+                        <option value="comercio">Comércio</option>
+                        <option value="servicos">Serviços</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-phone" class="form-label">Telefone de Contato</label>
+                      <input type="text" class="form-control" id="company-phone" placeholder="(xx) xxxx‑xxxx">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-email" class="form-label">Email Contato</label>
+                      <input type="email" class="form-control" id="company-email" placeholder="contato@empresa.com">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-bairro" class="form-label">Bairro</label>
+                      <input type="text" class="form-control" id="company-bairro" placeholder="Bairro">
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label for="company-endereco" class="form-label">Endereço</label>
+                      <input type="text" class="form-control" id="company-endereco" placeholder="Rua, Avenida...">
+                    </div>
+                    <div class="col-12 col-md-2">
+                      <label for="company-numero" class="form-label">Número</label>
+                      <input type="text" class="form-control" id="company-numero" placeholder="123">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-cep" class="form-label">CEP</label>
+                      <input type="text" class="form-control" id="company-cep" placeholder="00000‑000">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label for="company-cidade" class="form-label">Cidade</label>
+                      <input type="text" class="form-control" id="company-cidade" placeholder="Cidade">
+                    </div>
+                    <div class="col-12 col-md-2">
+                      <label for="company-uf" class="form-label">Estado (UF)</label>
+                      <select id="company-uf" class="form-control">
+                        <option value="">UF</option>
+                        <option value="AC">AC</option>
+                        <option value="AL">AL</option>
+                        <option value="AP">AP</option>
+                        <option value="AM">AM</option>
+                        <option value="BA">BA</option>
+                        <option value="CE">CE</option>
+                        <option value="DF">DF</option>
+                        <option value="ES">ES</option>
+                        <option value="GO">GO</option>
+                        <option value="MA">MA</option>
+                        <option value="MT">MT</option>
+                        <option value="MS">MS</option>
+                        <option value="MG">MG</option>
+                        <option value="PA">PA</option>
+                        <option value="PB">PB</option>
+                        <option value="PR">PR</option>
+                        <option value="PE">PE</option>
+                        <option value="PI">PI</option>
+                        <option value="RJ">RJ</option>
+                        <option value="RN">RN</option>
+                        <option value="RS">RS</option>
+                        <option value="RO">RO</option>
+                        <option value="RR">RR</option>
+                        <option value="SC">SC</option>
+                        <option value="SP">SP</option>
+                        <option value="SE">SE</option>
+                        <option value="TO">TO</option>
+                      </select>
+                    </div>
+                    <div class="col-12 mt-3">
+                      <label class="form-label">Selecione a Imagem/Logo da Empresa:</label><br>
+                      <input type="file" class="form-control" id="company-logo" accept="image/*">
+                    </div>
+                    <div class="col-12 mt-3">
+                      <label for="company-observacoes" class="form-label">Observações da Empresa</label>
+                      <textarea class="form-control" id="company-observacoes" rows="3" placeholder="Observações adicionais da empresa"></textarea>
+                    </div>
+                  </div>
+                  <div class="mt-4 d-flex justify-content-end">
+                    <button id="company-save-btn" type="button" class="btn btn-success">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção Produtos -->
+          <div id="products" class="content-section" style="display: none;">
+            <div class="content-header">
+              <div class="header-text">
+                <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+                <h1 class="page-title"><i class="fas fa-boxes mr-2"></i> Gestão de Produtos</h1>
+                <p class="page-subtitle">Gerencie o catálogo de produtos do seu agente</p>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-list mr-2"></i>
+                  Produtos Cadastrados
+                </h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                    <i class="fas fa-plus mr-1"></i>
+                    <span class="d-none d-sm-inline">Adicionar Produto</span>
+                    <span class="d-sm-none">Adicionar</span>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <!-- Tabela responsiva melhorada -->
+                <div class="table-responsive">
+                  <table class="table table-striped products-table">
+                    <thead>
+                      <tr>
+                        <th class="d-none d-md-table-cell">Imagem</th>
+                        <th>Nome</th>
+                        <th class="d-none d-lg-table-cell">Categoria</th>
+                        <th>Preço</th>
+                        <th class="d-none d-sm-table-cell">Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="product-list">
+                      <!-- As linhas de produtos serão geradas dinamicamente via script.js -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal de Edição de Produto -->
+          <!-- Este modal permite editar os detalhes de um produto existente. Os campos são
+               preenchidos dinamicamente via JavaScript quando o usuário clica no botão de editar.
+               Ao salvar, as alterações são enviadas para o backend através de uma chamada PUT.
+          -->
+          <!-- Modal de edição de produto (campos reduzidos: Nome, Preço, Categoria) -->
+          <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Editar Produto</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" id="edit-product-id">
+                  <div class="mb-3">
+                    <label for="edit-product-name" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="edit-product-name" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-product-price" class="form-label">Preço (R$)</label>
+                    <input type="number" class="form-control" id="edit-product-price" step="0.01" min="0" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-product-category" class="form-label">Categoria</label>
+                    <select class="form-control" id="edit-product-category">
+                      <option value="Eletrônicos">Eletrônicos</option>
+                      <option value="Informática">Informática</option>
+                      <option value="Celulares e Acessórios">Celulares e Acessórios</option>
+                      <option value="Roupas">Roupas</option>
+                      <option value="Calçados">Calçados</option>
+                      <option value="Casa">Casa</option>
+                      <option value="Decoração">Decoração</option>
+                      <option value="Móveis">Móveis</option>
+                      <option value="Esportes">Esportes</option>
+                      <option value="Fitness e Academia">Fitness e Academia</option>
+                      <option value="Livros">Livros</option>
+                      <option value="Jogos e Consoles">Jogos e Consoles</option>
+                      <option value="Brinquedos">Brinquedos</option>
+                      <option value="Saúde e Beleza">Saúde e Beleza</option>
+                      <option value="Cosméticos">Cosméticos</option>
+                      <option value="Alimentos e Bebidas">Alimentos e Bebidas</option>
+                      <option value="Pet Shop">Pet Shop</option>
+                      <option value="Ferramentas e Construção">Ferramentas e Construção</option>
+                      <option value="Automotivo">Automotivo</option>
+                      <option value="Jardinagem">Jardinagem</option>
+                      <option value="Escritório e Papelaria">Escritório e Papelaria</option>
+                      <option value="Música e Instrumentos">Música e Instrumentos</option>
+                      <option value="Viagens e Lazer">Viagens e Lazer</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="save-edit-product-btn">Salvar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção Pagamentos -->
+          <div id="payments" class="content-section" style="display: none;">
+            <div class="content-header">
+              <div class="header-text">
+                <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+                <h1 class="page-title"><i class="fas fa-credit-card mr-2"></i> Pagamentos e Assinatura</h1>
+                <p class="page-subtitle">Gerencie sua assinatura e métodos de pagamento</p>
+              </div>
+            </div>
+
+            <!-- Card de Assinatura Atual -->
+            <div class="row">
+              <div class="col-lg-8">
+                <div class="card subscription-card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-crown mr-2"></i>
+                      Plano Atual: Professional
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="subscription-price">
+                          R$ 349,00 <span>/mês</span>
+                        </div>
+                        <p class="subscription-description">
+                          Acesso completo a todas as funcionalidades do Helsen IA, incluindo análises avançadas, integração com WhatsApp e suporte prioritário.
+                        </p>
+                        <ul class="subscription-features">
+                          <li><i class="fas fa-check mr-2"></i> Agente IA ilimitado</li>
+                          <li><i class="fas fa-check mr-2"></i> Análises detalhadas</li>
+                          <li><i class="fas fa-check mr-2"></i> Integração WhatsApp</li>
+                          <li><i class="fas fa-check mr-2"></i> Suporte prioritário</li>
+                          <li><i class="fas fa-check mr-2"></i> Backup automático</li>
+                        </ul>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="subscription-actions">
+                          <button class="btn btn-light btn-lg mb-3">
+                            <i class="fas fa-edit mr-2"></i>
+                            Alterar Plano
+                          </button>
+                          <button class="btn btn-outline-light">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancelar Assinatura
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-calendar-alt mr-2"></i>
+                      Próxima Cobrança
+                    </h3>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="next-billing-date">
+                      <div class="billing-amount">R$ 349,00</div>
+                      <div class="billing-date">15 de Novembro, 2023</div>
+                      <small class="text-muted">Renovação automática</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Métodos de Pagamento -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-credit-card mr-2"></i>
+                  Métodos de Pagamento
+                </h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus mr-1"></i>
+                    Adicionar Cartão
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="payment-method-card">
+                  <div class="payment-icon">
+                    <i class="fab fa-cc-visa"></i>
+                  </div>
+                  <div class="payment-details">
+                    <div class="payment-type">Visa terminado em 4242</div>
+                    <div class="payment-expiry">Expira em 12/2025</div>
+                  </div>
+                  <div class="payment-actions">
+                    <span class="badge badge-success">Padrão</span>
+                    <button class="btn btn-sm btn-outline-secondary ml-2">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ml-1">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Histórico de Faturas -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-file-invoice mr-2"></i>
+                  Histórico de Faturas
+                </h3>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>15/10/2023</td>
+                        <td>Plano Professional - Outubro 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>15/09/2023</td>
+                        <td>Plano Professional - Setembro 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>15/08/2023</td>
+                        <td>Plano Professional - Agosto 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nova Seção: Integração WhatsApp -->
+    <div id="wa" class="content-section" style="display: none;">
+      <div class="content-header">
+        <div class="header-text">
+          <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+          <h1 class="page-title"><i class="fab fa-whatsapp mr-2"></i> Integração WhatsApp</h1>
+          <p class="page-subtitle">Conecte sua conta WhatsApp e gerencie instâncias</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="wa-instance-name" class="form-label">Nome da Instância</label>
+              <input type="text" class="form-control" id="wa-instance-name" placeholder="Ex: Loja01">
+            </div>
+            <div class="col-12 col-md-6 d-flex align-items-end">
+              <button id="wa-create-instance-btn" type="button" class="btn btn-primary w-100">Criar Instância</button>
+            </div>
+          </div>
+          <hr>
+          <div id="wa-instance-info" style="display: none;">
+            <div class="mb-3">
+              <label class="form-label">Instance ID</label>
+              <input type="text" class="form-control" id="wa-instance-id" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Token da Instância</label>
+              <input type="text" class="form-control" id="wa-instance-token" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Status da Conexão</label>
+              <div id="wa-status" class="p-2 border rounded bg-light">Desconhecido</div>
+            </div>
+            <div class="mb-3 text-center">
+              <img id="wa-qr-code" src="" alt="QR Code para conexão" style="max-width: 200px; display:none;">
+            </div>
+            <div class="mb-3">
+              <label for="wa-webhook-url" class="form-label">URL do Webhook</label>
+              <input type="text" class="form-control" id="wa-webhook-url" readonly>
+            </div>
+            <div class="mb-3 d-flex justify-content-end">
+              <button id="wa-set-webhook-btn" type="button" class="btn btn-secondary">Definir Webhook</button>
+            </div>
+            <hr>
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label for="wa-test-number" class="form-label">Número Destino</label>
+                <input type="text" class="form-control" id="wa-test-number" placeholder="55DDDNNNNNNN">
+              </div>
+              <div class="col-12 col-md-5">
+                <label for="wa-test-message" class="form-label">Mensagem de Teste</label>
+                <input type="text" class="form-control" id="wa-test-message" placeholder="Digite a mensagem">
+              </div>
+              <div class="col-12 col-md-3 d-flex align-items-end">
+                <button id="wa-send-test-btn" type="button" class="btn btn-outline-primary w-100">Enviar Teste</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <div class="float-right d-none d-sm-block">
+        <b>Versão</b> 1.0.0
+      </div>
+      <strong>Copyright &copy; 2024 <a href="#">Helsen IA</a>.</strong> Todos os direitos reservados.
+    </footer>
+  </div>
+
+  <!-- Modal de Sucesso Profissional -->
+  <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h4 class="modal-title" id="successModalLabel">Perfil Configurado!</h4>
+          <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="success-message">
+            Seu agente de IA foi configurado com sucesso e está pronto para uso!
+          </p>
+          
+          <div class="contact-info">
+            <h5>Para alterações futuras, entre em contato com nossa equipe:</h5>
+            <div class="contact-details">
+              <p><strong>Equipe Helsen IA</strong></p>
+              <p><i class="fas fa-envelope"></i> suporte@helsen.ai</p>
+              <p><i class="fas fa-phone"></i> (11) 9999-9999</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+            <i class="fas fa-thumbs-up mr-2"></i>
+            Entendi!
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modais para Métricas -->
+  <!-- Modal Conversas -->
+  <div class="modal fade" id="conversations-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-comments mr-2"></i>
+            Conversas Totais
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('conversations-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Última Mensagem</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="conversations-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Leads -->
+  <div class="modal fade" id="leads-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-user-plus mr-2"></i>
+            Leads Interessados
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('leads-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="filter-buttons mb-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="populateModalTable('leads-modal', 'all')">Todos</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="populateModalTable('leads-modal', 'Lead')">Leads</button>
+            <button class="btn btn-sm btn-outline-info" onclick="populateModalTable('leads-modal', 'Lead Qualificado')">Qualificados</button>
+            <button class="btn btn-sm btn-outline-warning" onclick="populateModalTable('leads-modal', 'Lead Quente')">Quentes</button>
+            <button class="btn btn-sm btn-outline-success" onclick="populateModalTable('leads-modal', 'Cliente')">Clientes</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>Última Mensagem</th>
+                  <th>Categoria</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Vendas -->
+  <div class="modal fade" id="sales-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            Vendas Realizadas
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('sales-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Produto</th>
+                  <th>Valor</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Satisfação -->
+  <div class="modal fade" id="satisfaction-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-check-circle mr-2"></i>
+            Taxa de Resolução
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('satisfaction-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Avaliação</th>
+                  <th>Comentário</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="satisfaction-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+          <!-- Seção Usuários removida -->
+  <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-plus mr-2"></i>
+            Adicionar Produto
+          </h5>
+          <button type="button" class="close" data-bs-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="product-form">
+            <div class="form-group">
+              <label for="product-image">Imagem do Produto</label>
+              <input type="file" class="form-control" id="product-image" accept="image/*">
+            </div>
+            <div class="form-group">
+              <label for="product-name">Nome do Produto</label>
+              <input type="text" class="form-control" id="product-name" required>
+            </div>
+            <div class="form-group">
+              <label for="product-price">Preço</label>
+              <input type="number" class="form-control" id="product-price" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="product-category">Categoria</label>
+              <select class="form-control" id="product-category">
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Informática">Informática</option>
+                <option value="Celulares e Acessórios">Celulares e Acessórios</option>
+                <option value="Roupas">Roupas</option>
+                <option value="Calçados">Calçados</option>
+                <option value="Casa">Casa</option>
+                <option value="Decoração">Decoração</option>
+                <option value="Móveis">Móveis</option>
+                <option value="Esportes">Esportes</option>
+                <option value="Fitness e Academia">Fitness e Academia</option>
+                <option value="Livros">Livros</option>
+                <option value="Jogos e Consoles">Jogos e Consoles</option>
+                <option value="Brinquedos">Brinquedos</option>
+                <option value="Saúde e Beleza">Saúde e Beleza</option>
+                <option value="Cosméticos">Cosméticos</option>
+                <option value="Alimentos e Bebidas">Alimentos e Bebidas</option>
+                <option value="Pet Shop">Pet Shop</option>
+                <option value="Ferramentas e Construção">Ferramentas e Construção</option>
+                <option value="Automotivo">Automotivo</option>
+                <option value="Jardinagem">Jardinagem</option>
+                <option value="Escritório e Papelaria">Escritório e Papelaria</option>
+                <option value="Música e Instrumentos">Música e Instrumentos</option>
+                <option value="Viagens e Lazer">Viagens e Lazer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="product-description">Descrição</label>
+              <textarea class="form-control" id="product-description" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="addProduct()">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chatbot responsivo melhorado -->
+  <div id="chatbot-container" class="chatbot-container">
+    <div id="chatbot-toggle" class="chatbot-toggle">
+      <img src="paclead.png" alt="Chatbot Icon" class="chatbot-icon">
+    </div>
+    
+    <div id="chatbot-window" class="chatbot-window">
+      <div class="chatbot-header">
+        <div class="chatbot-header-info">
+          <div class="chatbot-avatar">
+            <img src="pac-lead-avatar.png" alt="Chatbot Avatar" class="chatbot-avatar-img">
+          </div>
+          <div class="chatbot-title">
+            <h4>Pac Lead</h4>
+            <span class="chatbot-status">Online</span>
+          </div>
+        </div>
+        <button id="chatbot-close" class="chatbot-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div id="chatbot-messages" class="chatbot-messages">
+        <div class="message bot-message">
+          <div class="message-content">
+            <p>Oi, tudo bem? 👋</p>
+            <p>Estamos aqui 24/7 para te ajudar!</p>
+          </div>
+          <div class="message-time">Agora</div>
+        </div>
+      </div>
+      
+      <div class="chatbot-input-container">
+        <input type="text" id="chatbot-input" placeholder="Digite sua mensagem..." maxlength="500">
+        <input type="file" id="chatbot-image-input" accept="image/*" hidden>
+        <button id="chatbot-image-btn" class="chatbot-send-btn" title="Enviar imagem">
+          <i class="fas fa-image"></i>
+        </button>
+        <button id="chatbot-send" class="chatbot-send-btn">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- AdminLTE JS -->
+  <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+  
+  <!-- JavaScript Customizado -->
+  <script src="script.js"></script>
+
+  <!-- Adicionando JavaScript para controle do menu mobile -->
+  <script>
+    // Controle do menu mobile
+    document.addEventListener('DOMContentLoaded', function() {
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      const body = document.body;
+      const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+      // Função para abrir/fechar sidebar
+      function toggleSidebar() {
+        body.classList.toggle('sidebar-open');
+      }
+
+      // Função para fechar sidebar
+      function closeSidebar() {
+        body.classList.remove('sidebar-open');
+      }
+
+      // Event listeners
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          toggleSidebar();
+        });
+      }
+
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+      }
+
+      // Fechar sidebar ao clicar em links de navegação no mobile
+      mobileNavLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          if (window.innerWidth <= 991.98) {
+            setTimeout(closeSidebar, 100);
+          }
+        });
+      });
+
+      // Fechar sidebar ao redimensionar para desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 991.98) {
+          closeSidebar();
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://pac-lead-production.up.railway.app/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://pac-lead-production.up.railway.app/uploads/$1" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <!-- Define o domínio do backend para as chamadas da API.
+       Troque a URL abaixo caso seu backend esteja em outro domínio. -->
+  <script>
+    window.__BACKEND_BASE__ = "https://pac-lead-production.up.railway.app";
+    window.__API_PREFIX__ = "/api";
+  </script>
+
+  <!-- Base tag ensures assets are resolved relative to root when the page is refreshed on a sub‑route -->
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helsen IA – Login</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Estilos globais do dashboard -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilização específica da página de login. Esta página ocupa
+       toda a tela, utilizando o tema escuro do site. O container do
+       formulário é mais largo e a logomarca está maior para destacar
+       a identidade visual. */
+    /*
+      Layout inspirado em páginas de login modernas (como serviços de streaming ou plataformas de mídia). A tela inteira
+      recebe um gradiente escuro com tonalidades profundas. No centro, um card de vidro (glassmorphism) apresenta o
+      formulário de autenticação com bordas suaves e sombra. O contraste de fontes e botões foi ajustado para
+      melhor legibilidade e apelo visual.
+    */
+    /* Estilo global e gradiente de fundo */
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-primary);
+      /* Fundo com gradiente escuro similar ao de plataformas conhecidas */
+      background: linear-gradient(135deg, #0f1c3f 0%, #171e48 35%, #2d0e3e 100%);
+      overflow: hidden;
+    }
+    /* Estrutura principal: duas colunas em tela cheia. O wrapper ocupa toda a
+       largura e altura da viewport, sem borda arredondada ou sombra. A ordem
+       dos filhos é invertida para exibir a imagem à esquerda e o formulário
+       de login à direita. */
+    .login-wrapper {
+      display: flex;
+      flex-direction: row-reverse; /* inverte a ordem: imagem à esquerda */
+      /* Ajustamos o tamanho do painel para deixá‑lo ainda mais amplo, mas
+         sem ocupar toda a viewport. A largura agora usa 96% da tela com
+         um limite máximo maior e a altura foi ampliada para 90% da
+         viewport, garantindo mais espaço para a imagem e formulários. */
+      width: 96%;
+      max-width: 1400px;
+      height: 90vh;
+      min-height: 80vh;
+      border-radius: 25px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    }
+    /* Painel de formulário (direito) */
+    .left-panel {
+      width: 50%;
+      padding: 3rem;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    /* Painel de imagem (esquerdo) */
+    .right-panel {
+      width: 50%;
+      position: relative;
+      overflow: hidden;
+      background: #101c3b;
+    }
+    /* Cria formas abstratas usando gradientes radiais para simular ondas fluidas */
+    /* Removemos os gradientes abstratos para um design mais limpo. */
+    .right-panel::before,
+    .right-panel::after {
+      display: none;
+    }
+
+    /* A imagem decorativa posicionada sobre o painel direito. Ajuste a proporção conforme necessário. */
+    .right-panel img {
+      /* Centraliza a imagem dentro do painel e preserva suas proporções. */
+      position: absolute;
+      top: 50%;
+      left: 65%;
+      transform: translate(-50%, -50%);
+      max-width: 1032%;
+      max-height: 140%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      z-index: 1;
+    }
+    .login-logo img {
+      height: 150px;
+      width: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .login-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .login-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+    .form-control {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0;
+      padding-left: 0;
+      color: #fff;
+    }
+    .form-control:focus {
+      background: transparent;
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: none;
+    }
+    .btn-primary,
+    .btn-success {
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+    }
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    .btn-success {
+      background-color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+    .btn-success:hover {
+      background-color: #1e7e34;
+    }
+    .link-underline {
+      color: var(--primary-color);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .toggle-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+    #errorMsg {
+      display: none;
+      color: var(--danger-color);
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    /* Novo layout mobile com background desfocado da imagem PAC-LEAD */
+    @media (max-width: 768px) {
+      body {
+        overflow: auto;
+        /* Background com a imagem do PAC-LEAD desfocada */
+        background: linear-gradient(135deg, rgba(15, 28, 63, 0.9) 0%, rgba(23, 30, 72, 0.9) 35%, rgba(45, 14, 62, 0.9) 100%),
+                    url('pacleadhumanoid.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        position: relative;
+      }
+      
+      /* Overlay desfocado por cima da imagem de fundo */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        backdrop-filter: blur(8px);
+        background: rgba(15, 28, 63, 0.7);
+        z-index: -1;
+      }
+      
+      .login-wrapper {
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        min-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+      }
+      
+      .left-panel {
+        width: 100%;
+        padding: 2rem 1.5rem;
+        order: 1;
+        flex: 1;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Card glassmorphism para o formulário */
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 2rem 1rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      
+      .right-panel {
+        display: none; /* Escondendo o painel da imagem já que agora é background */
+      }
+      
+      .login-logo img {
+        height: 80px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      }
+      
+      .login-title {
+        font-size: 1.4rem;
+        margin-bottom: 0.3rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .login-subtitle {
+        font-size: 0.8rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .form-control {
+        padding: 0.75rem 0;
+        font-size: 1rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px 8px 0 0;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+      
+      .form-control:focus {
+        border-bottom: 2px solid var(--primary-color);
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .btn-primary,
+      .btn-success {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        transition: all 0.3s ease;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+      }
+      
+      .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+      }
+      
+      .form-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+      
+      .mb-3 {
+        margin-bottom: 1.5rem !important;
+      }
+      
+      .mb-4 {
+        margin-bottom: 2rem !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .left-panel {
+        padding: 1.5rem 1rem;
+        margin:-1rem 0rem;
+      }
+      
+      .login-logo img {
+        height: 190px;
+      }
+      
+      .login-title {
+        font-size: 1.3rem;
+      }
+      
+      .form-control {
+        padding: 0.75rem;
+      }
+    }
+
+    /* Layout landscape para mobile */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .left-panel {
+        min-height: 100vh;
+        margin: 1rem;
+      }
+    }
+  </style>
+  <!-- Se o usuário já estiver autenticado, redireciona para o dashboard -->
+  <script>
+    (function() {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          window.location.href = 'index.html';
+        }
+      } catch (_) {
+        // ignorar erros de localStorage
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="login-wrapper">
+    <!-- Lado esquerdo: formulário de autenticação -->
+    <div class="left-panel">
+      <div class="login-logo mb-3">
+        <img src="logoprincipal.png" alt="Helsen IA">
+      </div>
+      <h2 class="login-title">Bem-vindo ao Helsen IA</h2>
+      <!-- Formulário de login -->
+      <form id="login-form" autocomplete="off">
+        <div class="mb-3">
+          <label for="login-email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="login-email" placeholder="Digite seu email" required>
+        </div>
+        <div class="mb-4">
+          <label for="login-password" class="form-label">Senha</label>
+          <input type="password" class="form-control" id="login-password" placeholder="Digite sua senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mb-3">Entrar</button>
+        <p class="toggle-text">Não tem conta? <a href="#" id="link-show-register" class="link-underline">Crie agora</a></p>
+      </form>
+      <!-- Formulário de registro (oculto inicialmente) -->
+      <form id="register-form" style="display:none;" autocomplete="off">
+        <div class="mb-3">
+          <label for="register-name" class="form-label">Nome</label>
+          <input type="text" class="form-control" id="register-name" placeholder="Seu nome completo" required>
+        </div>
+        <div class="mb-3">
+          <label for="register-email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="register-email" placeholder="Digite seu email" required>
+        </div>
+  <!-- Campo para CPF ou CNPJ. Utilizamos um único campo para ambas as
+       modalidades. Somente dígitos serão enviados ao backend. -->
+  <div class="mb-3">
+    <label for="register-tax" class="form-label">CPF ou CNPJ</label>
+    <input type="text" class="form-control" id="register-tax" placeholder="Digite seu CPF ou CNPJ" required>
+  </div>
+        <div class="mb-4">
+          <label for="register-password" class="form-label">Senha</label>
+          <input type="password" class="form-control" id="register-password" placeholder="Crie uma senha" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100 mb-3">Criar Conta</button>
+        <p class="toggle-text">Já tem conta? <a href="#" id="link-show-login" class="link-underline">Entrar</a></p>
+      </form>
+      <div id="errorMsg"></div>
+    </div>
+    <!-- Lado direito: área decorativa com formas e gradientes -->
+    <div class="right-panel">
+      <!-- Imagem decorativa para a tela de login. Substitua 'login-placeholder.png' pelo arquivo desejado. -->
+      <img id="login-image-placeholder" src="pacleadhumanoid.png" alt="Imagem decorativa">
+    </div>
+  </div>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Define a base do backend para o script de autenticação. Ajuste conforme seu ambiente. -->
+  <script>
+    window.__BACKEND_BASE__ = window.__BACKEND_BASE__ || 'https://pac-lead-production.up.railway.app';
+    window.__API_PREFIX__ = typeof window.__API_PREFIX__ !== 'undefined' ? window.__API_PREFIX__ : '/api';
+    // Alternância entre formulários de login e de registro
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const showRegisterLinks = document.querySelectorAll('#link-show-register');
+      const showLoginLink = document.getElementById('link-show-login');
+      showRegisterLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          loginForm.style.display = 'none';
+          registerForm.style.display = 'block';
+        });
+      });
+      if (showLoginLink) {
+        showLoginLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          registerForm.style.display = 'none';
+          loginForm.style.display = 'block';
+        });
+      }
+    });
+  </script>
+  <!-- Script de autenticação que envia os dados ao backend e lida com erros/sucesso -->
+  <script src="auth.js"></script>
+</body>
+</html>
