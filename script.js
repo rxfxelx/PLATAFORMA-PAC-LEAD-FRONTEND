@@ -1,3 +1,9 @@
+/* =========================================================
+   Helsen IA - Frontend Script
+   - WhatsApp (uazapi) com QR code robusto
+   - Produtos, Analytics e Chatbot
+   ========================================================= */
+
 // ===== VARIÁVEIS GLOBAIS =====
 let products = [];
 let chartInstance = null;
@@ -37,9 +43,39 @@ const defaultHeaders = (() => {
   return headers;
 })();
 
-/* util para desenhar QR quando vier apenas o código textual */
+/* =========================================================
+   UTILITÁRIOS de QR/Status
+   ========================================================= */
+
+// Garante que exista um drawer para desenhar QR via canvas (quando vier texto)
+function ensureQrDrawer() {
+  let drawer = document.getElementById('wa-qr-drawer');
+  if (!drawer) {
+    const img = document.getElementById('wa-qr-code');
+    const holder = img?.parentElement || document.getElementById('wa-instance-info');
+    if (holder) {
+      drawer = document.createElement('div');
+      drawer.id = 'wa-qr-drawer';
+      drawer.style.display = 'none';
+      drawer.style.marginTop = '8px';
+      holder.appendChild(drawer);
+    }
+  }
+  return drawer;
+}
+
+// Desenha QR quando vier apenas código textual (requer qrcode.min.js)
 function drawQrInto(containerEl, text) {
-  if (!containerEl || !text || typeof QRCode === 'undefined') return;
+  if (!containerEl || !text) return;
+  if (typeof QRCode === 'undefined') {
+    // sem lib: apenas exibe o texto
+    containerEl.style.display = 'block';
+    containerEl.style.padding = '8px';
+    containerEl.style.background = '#111';
+    containerEl.style.borderRadius = '8px';
+    containerEl.innerHTML = `<small style="color:#ddd">QR code (texto):</small><pre style="white-space:pre-wrap;color:#9cd">${text}</pre>`;
+    return;
+  }
   containerEl.innerHTML = '';
   const canvas = document.createElement('canvas');
   QRCode.toCanvas(canvas, text, { width: 220, margin: 1 }, (err) => {
@@ -52,6 +88,84 @@ function drawQrInto(containerEl, text) {
     containerEl.style.display = 'block';
   });
 }
+
+// Procura QR em várias chaves/estruturas (inclusive aninhadas)
+function extractQrFrom(obj) {
+  if (!obj || typeof obj !== 'object') return null;
+  const keys = ['qrcode','qrCode','qr_code','qrbase64','qrBase64','code','imageUrl','image_url','dataUrl','data_url'];
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === 'string' && v.length > 5) return v;
+  }
+  for (const k of Object.keys(obj)) {
+    const v = obj[k];
+    if (v && typeof v === 'object') {
+      const found = extractQrFrom(v);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// Normaliza o status para string amigável
+function friendlyState(raw) {
+  if (typeof raw === 'string') {
+    const low = raw.toLowerCase();
+    if (low === 'connected') return 'connected';
+    if (low.includes('wait') || low.includes('qr')) return 'waiting-qr';
+    return raw;
+  }
+  if (raw && typeof raw === 'object') {
+    if (raw.connected === true && raw.loggedIn === true) return 'connected';
+    if (raw.connected === true && raw.loggedIn === false) return 'waiting-qr';
+    try { return JSON.stringify(raw); } catch { return 'connecting'; }
+  }
+  return 'connecting';
+}
+
+// Renderiza o QR: base64 (imagem) ou texto (canvas)
+function renderQr(qr) {
+  const img = document.getElementById('wa-qr-code');
+  const drawer = ensureQrDrawer();
+  if (!qr) {
+    if (img) img.style.display = 'none';
+    if (drawer) drawer.style.display = 'none';
+    return;
+  }
+  if (typeof qr === 'string' && qr.startsWith('data:image')) {
+    if (drawer) drawer.style.display = 'none';
+    if (img) { img.src = qr; img.style.display = 'block'; }
+  } else if (typeof qr === 'string') {
+    if (img) img.style.display = 'none';
+    if (drawer) drawQrInto(drawer, qr);
+  } else {
+    if (img) img.style.display = 'none';
+    if (drawer) drawer.style.display = 'none';
+  }
+}
+
+// Fallback: tenta buscar QR diretamente em endpoint dedicado (se existir)
+async function tryFetchQrFallback() {
+  if (!waCurrentInstance || !waCurrentToken) return null;
+  const urlCandidates = [
+    `${BACKEND_BASE}/api/wa/instances/${encodeURIComponent(waCurrentInstance)}/qr?token=${encodeURIComponent(waCurrentToken)}`,
+    `${BACKEND_BASE}/api/wa/instances/${encodeURIComponent(waCurrentInstance)}/qrcode?token=${encodeURIComponent(waCurrentToken)}`
+  ];
+  for (const url of urlCandidates) {
+    try {
+      const r = await fetch(url, { headers: defaultHeaders });
+      if (!r.ok) continue;
+      const j = await r.json().catch(() => ({}));
+      const qr = extractQrFrom(j);
+      if (qr) return qr;
+    } catch (_) {}
+  }
+  return null;
+}
+
+/* =========================================================
+   WHATSAPP (uazapi)
+   ========================================================= */
 
 // Cria uma nova instância via backend e já mostra o QR quando possível
 async function createWhatsAppInstance() {
@@ -69,7 +183,7 @@ async function createWhatsAppInstance() {
     if (!res.ok) {
       const text = await res.text();
       if (res.status === 401) {
-        throw new Error('Uazapi respondeu 401 (Unauthorized). Verifique UAZAPI_BASE, UAZAPI_ADMIN_TOKEN e header no backend.');
+        throw new Error('Não autorizado (401). Verifique as variáveis do Uazapi no backend.');
       }
       throw new Error(text || 'Erro ao criar instância');
     }
@@ -92,25 +206,13 @@ async function createWhatsAppInstance() {
 
     // Se veio payload connect, tenta mostrar QR imediatamente
     const statusEl = document.getElementById('wa-status');
-    const qrImg    = document.getElementById('wa-qr-code');
-    const qrDraw   = document.getElementById('wa-qr-drawer');
-
     const c = data.connect || {};
     const rawState = c.status || c.state || data.status || data.state || 'connecting';
-    const stateStr = typeof rawState === 'string' ? rawState : JSON.stringify(rawState);
+    const stateStr = friendlyState(rawState);
     if (statusEl) statusEl.textContent = stateStr;
 
-    const qr = c.qrcode || c.qrCode || c.qr_code || c.qrbase64 || c.qrBase64 || c.code;
-    if (typeof qr === 'string' && qr.startsWith('data:image')) {
-      if (qrImg) { qrImg.src = qr; qrImg.style.display = 'block'; }
-      if (qrDraw) qrDraw.style.display = 'none';
-    } else if (typeof qr === 'string' && qr) {
-      if (qrImg) qrImg.style.display = 'none';
-      if (qrDraw) drawQrInto(qrDraw, qr);
-    } else {
-      if (qrImg) qrImg.style.display = 'none';
-      if (qrDraw) qrDraw.style.display = 'none';
-    }
+    const initialQr = extractQrFrom(c) || extractQrFrom(data);
+    renderQr(initialQr);
 
     // Começa o polling
     if (waPollInterval) clearInterval(waPollInterval);
@@ -136,40 +238,37 @@ async function updateWhatsAppStatus() {
     }
     const data = await res.json();
     const statusEl = document.getElementById('wa-status');
-    const qrImg    = document.getElementById('wa-qr-code');
-    const qrDraw   = document.getElementById('wa-qr-drawer');
 
     const rawState =
       data.status ||
       data.state ||
-      (data.instance && data.instance.status) ||
-      (data.connect && data.connect.status);
+      (data.instance && (data.instance.status || data.instance.state)) ||
+      (data.connect && (data.connect.status || data.connect.state)) ||
+      (data.session && (data.session.status || data.session.state));
 
-    const stateStr = typeof rawState === 'string' ? rawState : JSON.stringify(rawState || 'connecting');
+    const stateStr = friendlyState(rawState);
     if (statusEl) statusEl.textContent = stateStr;
 
-    const state = (typeof rawState === 'string') ? rawState.toLowerCase() : '';
-    if (state === 'connected') {
+    // Se realmente conectado, encerra polling e oculta QR
+    const connected =
+      (typeof rawState === 'string' && rawState.toLowerCase() === 'connected') ||
+      (rawState && rawState.connected === true && rawState.loggedIn !== false);
+
+    if (connected) {
       if (waPollInterval) clearInterval(waPollInterval);
-      if (qrImg) qrImg.style.display = 'none';
-      if (qrDraw) qrDraw.style.display = 'none';
+      renderQr(null);
       return;
     }
 
-    const qr =
-      data.qrcode || data.qrCode || data.qr_code || data.qrbase64 || data.qrBase64 || data.code ||
-      (data.connect && (data.connect.qrcode || data.connect.qrCode || data.connect.qr_code ||
-                         data.connect.qrbase64 || data.connect.qrBase64 || data.connect.code));
-
-    if (typeof qr === 'string' && qr.startsWith('data:image')) {
-      if (qrImg) { qrImg.src = qr; qrImg.style.display = 'block'; }
-      if (qrDraw) qrDraw.style.display = 'none';
-    } else if (typeof qr === 'string' && qr) {
-      if (qrImg) qrImg.style.display = 'none';
-      if (qrDraw) drawQrInto(qrDraw, qr);
+    // Quando não logado (waiting-qr), tenta mostrar QR
+    const qrFromStatus = extractQrFrom(data) || extractQrFrom(data.connect || {}) || extractQrFrom(data.session || {});
+    if (qrFromStatus) {
+      renderQr(qrFromStatus);
+    } else if (stateStr === 'waiting-qr') {
+      const qrFallback = await tryFetchQrFallback();
+      renderQr(qrFallback);
     } else {
-      if (qrImg) qrImg.style.display = 'none';
-      if (qrDraw) qrDraw.style.display = 'none';
+      renderQr(null);
     }
   } catch (err) {
     console.error(err);
@@ -224,6 +323,13 @@ async function sendWhatsAppTest() {
     });
     if (!res.ok) {
       const t = await res.text();
+      // Tratamento amigável de desconexão
+      if (res.status === 503 && /disconnected/i.test(t)) {
+        alert('WhatsApp desconectado. Escaneie o QR code para conectar e tente novamente.');
+        // força reexibição do QR
+        await updateWhatsAppStatus();
+        return;
+      }
       throw new Error(t || 'Erro ao enviar mensagem');
     }
     alert('Mensagem enviada!');
@@ -233,7 +339,10 @@ async function sendWhatsAppTest() {
   }
 }
 
-// ==== Funções de integração com o backend (produtos/analytics etc.) ====
+/* =========================================================
+   Funções de integração com o backend (produtos/analytics etc.)
+   ========================================================= */
+
 async function fetchProducts() {
   try {
     const res = await fetch(`${BACKEND_BASE}/api/products`, { headers: defaultHeaders });
@@ -301,10 +410,7 @@ async function createProductOnBackend(product) {
 
 async function deleteProductOnBackend(id) {
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/products/${id}`, {
-      method: 'DELETE',
-      headers: defaultHeaders
-    });
+    const res = await fetch(`${BACKEND_BASE}/api/products/${id}`, { method: 'DELETE', headers: defaultHeaders });
     if (!res.ok) throw new Error('Falha ao remover produto');
     return true;
   } catch (err) {
@@ -315,9 +421,7 @@ async function deleteProductOnBackend(id) {
 
 async function fetchAnalyticsSummary() {
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/analytics/summary`, {
-      headers: defaultHeaders
-    });
+    const res = await fetch(`${BACKEND_BASE}/api/analytics/summary`, { headers: defaultHeaders });
     if (!res.ok) throw new Error('Falha ao buscar resumo analítico');
     return await res.json();
   } catch (err) {
@@ -328,9 +432,7 @@ async function fetchAnalyticsSummary() {
 
 async function fetchTopProducts() {
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/analytics/top-products`, {
-      headers: defaultHeaders
-    });
+    const res = await fetch(`${BACKEND_BASE}/api/analytics/top-products`, { headers: defaultHeaders });
     if (!res.ok) throw new Error('Falha ao buscar top produtos');
     return await res.json();
   } catch (err) {
@@ -341,9 +443,7 @@ async function fetchTopProducts() {
 
 async function fetchSalesByHour() {
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/analytics/sales-by-hour`, {
-      headers: defaultHeaders
-    });
+    const res = await fetch(`${BACKEND_BASE}/api/analytics/sales-by-hour`, { headers: defaultHeaders });
     if (!res.ok) throw new Error('Falha ao buscar vendas por hora');
     return await res.json();
   } catch (err) {
@@ -382,11 +482,7 @@ async function uploadImage(file) {
     'X-Flow-ID': defaultHeaders['X-Flow-ID']
   };
   if (defaultHeaders['Authorization']) headers['Authorization'] = defaultHeaders['Authorization'];
-  const res = await fetch(`${BACKEND_BASE}/api/upload`, {
-    method: 'POST',
-    headers,
-    body: formData
-  });
+  const res = await fetch(`${BACKEND_BASE}/api/upload`, { method: 'POST', headers, body: formData });
   if (!res.ok) throw new Error('Falha ao enviar imagem');
   const data = await res.json();
   return data.url;
@@ -762,6 +858,7 @@ async function addProduct() {
 }
 function updateProductTable() {
   const tbody = document.getElementById("product-list");
+  if (!tbody) return;
   if (!products || products.length === 0) {
     tbody.innerHTML = `
       <tr>
@@ -1203,7 +1300,7 @@ class Chatbot {
   async sendMessage() {
     const input = document.getElementById('chatbot-input');
     const raw = input.value || '';
-       const message = raw.trim();
+    const message = raw.trim();
     if (this.isTyping) return;
 
     const hasPendingImage = !!this.pendingImageFile;
@@ -1303,12 +1400,12 @@ class Chatbot {
     const wrap = document.createElement('div');
     wrap.className = `message ${sender}-message`;
     const now = new Date();
-    const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    theTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     wrap.innerHTML = `
       <div class="message-content">
         <img src="${src}" alt="Imagem" style="max-width:220px; border-radius:8px; display:block;">
       </div>
-      <div class="message-time">${timeString}</div>
+      <div class="message-time">${theTime}</div>
     `;
     messagesContainer.appendChild(wrap);
     this.scrollToBottom();
