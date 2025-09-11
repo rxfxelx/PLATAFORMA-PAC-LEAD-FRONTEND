@@ -44,6 +44,17 @@ const defaultHeaders = (() => {
 })();
 
 /* =========================================================
+   UTILITÁRIOS
+   ========================================================= */
+
+// Parse de lista CSV/espacos/; para array de strings
+function parseList(str, def = []) {
+  if (!str || typeof str !== 'string') return def.slice();
+  const parts = str.split(/[,; ]+/).map(s => s.trim()).filter(Boolean);
+  return parts.length ? parts : def.slice();
+}
+
+/* =========================================================
    UTILITÁRIOS de QR/Status
    ========================================================= */
 
@@ -68,7 +79,6 @@ function ensureQrDrawer() {
 function drawQrInto(containerEl, text) {
   if (!containerEl || !text) return;
   if (typeof QRCode === 'undefined') {
-    // sem lib: apenas exibe o texto
     containerEl.style.display = 'block';
     containerEl.style.padding = '8px';
     containerEl.style.background = '#111';
@@ -282,6 +292,11 @@ async function setWhatsAppWebhook() {
     return;
   }
   const url = document.getElementById('wa-webhook-url')?.value.trim();
+  const eventsStr = document.getElementById('wa-events')?.value || 'messages,connection';
+  const excludeStr = document.getElementById('wa-exclude-events')?.value || 'wasSentByApi,isGroupYes';
+  const events = parseList(eventsStr, ['messages','connection']);
+  const exclude = parseList(excludeStr, ['wasSentByApi','isGroupYes']);
+
   if (!url) {
     alert('Informe a URL do webhook.');
     return;
@@ -290,13 +305,27 @@ async function setWhatsAppWebhook() {
     const res = await fetch(`${BACKEND_BASE}/api/wa/instances/${encodeURIComponent(waCurrentInstance)}/webhook`, {
       method: 'POST',
       headers: defaultHeaders,
-      body: JSON.stringify({ url, events: ['messages', 'connection'], token: waCurrentToken })
+      body: JSON.stringify({
+        url,
+        events,
+        // Enviamos em várias chaves para compatibilizar com diferentes backends:
+        exclude,            // nossa chave
+        excludeEvents: exclude,
+        ignore: exclude,
+        token: waCurrentToken
+      })
     });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || 'Erro ao definir webhook');
     }
-    alert('Webhook definido com sucesso!');
+    // tenta ler JSON, senão exibe texto
+    let msg = 'Webhook definido com sucesso!';
+    try {
+      const data = await res.json();
+      if (data && (data.ok || data.status === 'ok')) msg = 'Webhook definido com sucesso!';
+    } catch (_) {}
+    alert(msg);
   } catch (err) {
     console.error(err);
     alert('Falha ao definir webhook: ' + err.message);
@@ -326,7 +355,6 @@ async function sendWhatsAppTest() {
       // Tratamento amigável de desconexão
       if (res.status === 503 && /disconnected/i.test(t)) {
         alert('WhatsApp desconectado. Escaneie o QR code para conectar e tente novamente.');
-        // força reexibição do QR
         await updateWhatsAppStatus();
         return;
       }
@@ -1400,12 +1428,12 @@ class Chatbot {
     const wrap = document.createElement('div');
     wrap.className = `message ${sender}-message`;
     const now = new Date();
-    theTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     wrap.innerHTML = `
       <div class="message-content">
         <img src="${src}" alt="Imagem" style="max-width:220px; border-radius:8px; display:block;">
       </div>
-      <div class="message-time">${theTime}</div>
+      <div class="message-time">${timeString}</div>
     `;
     messagesContainer.appendChild(wrap);
     this.scrollToBottom();
