@@ -25,12 +25,10 @@
   
   <!-- AdminLTE CSS -->
   <link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
-  
+
+  <script src="/api-base-shim.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- QRCode (para desenhar QR quando vier apenas o código textual) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   
   <!-- CSS Customizado -->
   <link rel="stylesheet" href="style.css">
@@ -68,10 +66,7 @@
       <div class="navbar-brand d-block d-lg-none">
         <img src="logoprincipal.png" alt="Helsen IA" class="navbar-brand-image">
       </div>
-      <a href="#products" class="nav-link">Produtos</a>
-  <a href="#company" class="nav-link">Empresa</a>
-  <a href="#analysis" class="nav-link">Análise</a>
-</nav>
+    </nav>
 
     <!-- Adicionando overlay para fechar menu mobile -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -104,6 +99,12 @@
               </a>
             </li>
             <li class="nav-item">
+              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('wa')">
+                <i class="nav-icon fab fa-whatsapp"></i>
+                <p>WhatsApp</p>
+              </a>
+            </li>
+            <li class="nav-item">
               <a href="#" class="nav-link mobile-nav-link" onclick="showSection('products')">
                 <i class="nav-icon fas fa-boxes"></i>
                 <p>Produtos</p>
@@ -113,13 +114,6 @@
               <a href="#" class="nav-link mobile-nav-link" onclick="showSection('payments')">
                 <i class="nav-icon fas fa-credit-card"></i>
                 <p>Pagamentos</p>
-              </a>
-            </li>
-            <!-- Item de menu para integração com WhatsApp -->
-            <li class="nav-item">
-              <a href="#" class="nav-link mobile-nav-link" onclick="showSection('wa')">
-                <i class="nav-icon fab fa-whatsapp"></i>
-                <p>WhatsApp</p>
               </a>
             </li>
             <li class="nav-item logout">
@@ -335,6 +329,7 @@
                       </div>
                     </div>
                   </div>
+                </div>
 
                 <div class="form-actions d-flex flex-column flex-md-row justify-content-between gap-2">
                   <button type="button" class="btn btn-outline-secondary" onclick="previousTab()">
@@ -405,10 +400,89 @@
             </div>
           </div>
 
+          <div id="wa" class="content-section" style="display: none;">
+      <div class="content-header">
+        <div class="header-text">
+          <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
+          <h1 class="page-title"><i class="fab fa-whatsapp mr-2"></i> Integração WhatsApp</h1>
+          <p class="page-subtitle">Conecte sua conta WhatsApp e gerencie instâncias</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="wa-instance-name" class="form-label">Nome da Instância</label>
+              <input type="text" class="form-control" id="wa-instance-name" placeholder="Ex: Loja01">
+            </div>
+            <div class="col-12 col-md-6 d-flex align-items-end">
+              <button id="wa-create-instance-btn" type="button" class="btn btn-primary w-100">Criar Instância</button>
+            </div>
+          </div>
+          <hr>
+          <div id="wa-instance-info" style="display: none;">
+            <div class="mb-3">
+              <label class="form-label">Instance ID</label>
+              <input type="text" class="form-control" id="wa-instance-id" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Token da Instância</label>
+              <input type="text" class="form-control" id="wa-instance-token" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Status da Conexão</label>
+              <div id="wa-status" class="p-2 border rounded bg-light">Desconhecido</div>
+            </div>
+            <div class="mb-3 text-center">
+              <img id="wa-qr-code" src="" alt="QR Code para conexão" style="max-width: 200px; display:none;">
+              <!-- Contêiner extra para desenhar QR quando vier apenas código textual -->
+              <div id="wa-qr-drawer" style="display:none; margin-top:8px;"></div>
+            </div>
+
+            <!-- Novos campos para eventos do webhook -->
+            <div class="mb-3">
+              <label for="wa-webhook-url" class="form-label">URL do Webhook</label>
+              <input type="text" class="form-control" id="wa-webhook-url" placeholder="https://SEU-AGENTE/webhook/uazapi">
+              <small class="text-muted">Por padrão sugerimos o backend do agente IA.</small>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="wa-events" class="form-label">Eventos a escutar</label>
+                <input type="text" class="form-control" id="wa-events" value="messages,connection">
+                <small class="text-muted">Separados por vírgula. Padrão: messages,connection.</small>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="wa-exclude-events" class="form-label">Excluir dos eventos escutados</label>
+                <input type="text" class="form-control" id="wa-exclude-events" value="wasSentByApi,isGroupYes">
+                <small class="text-muted">Use exatamente estes para evitar loop e grupos: <b>wasSentByApi,isGroupYes</b></small>
+              </div>
+            </div>
+
+            <div class="mb-3 d-flex justify-content-end mt-3">
+              <button id="wa-set-webhook-btn" type="button" class="btn btn-secondary">Definir Webhook</button>
+            </div>
+            <hr>
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label for="wa-test-number" class="form-label">Número Destino</label>
+                <input type="text" class="form-control" id="wa-test-number" placeholder="55DDDNNNNNNN">
+              </div>
+              <div class="col-12 col-md-5">
+                <label for="wa-test-message" class="form-label">Mensagem de Teste</label>
+                <input type="text" class="form-control" id="wa-test-message" placeholder="Digite a mensagem">
+              </div>
+              <div class="col-12 col-md-3 d-flex align-items-end">
+                <button id="wa-send-test-btn" type="button" class="btn btn-outline-primary w-100">Enviar Teste</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
           <!-- Seção Análise -->
-          
-<!-- replaced section analysis from old -->
-<div id="analysis" class="content-section" style="display: none;">
+          <div id="analysis" class="content-section" style="display: none;">
             <div class="content-header">
               <div class="header-text">
                 <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
@@ -516,11 +590,8 @@
             </div>
           </div>
 
-
           <!-- Seção Empresa -->
-          
-<!-- replaced section company from old -->
-<div id="company" class="content-section" style="display: none;">
+          <div id="company" class="content-section" style="display: none;">
             <div class="content-header">
               <div class="header-text">
                 <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
@@ -642,11 +713,8 @@
             </div>
           </div>
 
-
           <!-- Seção Produtos -->
-          
-<!-- replaced section products from old -->
-<div id="products" class="content-section" style="display: none;">
+          <div id="products" class="content-section" style="display: none;">
             <div class="content-header">
               <div class="header-text">
                 <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
@@ -691,7 +759,6 @@
               </div>
             </div>
           </div>
-
 
           <!-- Modal de Edição de Produto -->
           <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
@@ -855,86 +922,67 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Nova Seção: Integração WhatsApp -->
-    <div id="wa" class="content-section" style="display: none;">
-      <div class="content-header">
-        <div class="header-text">
-          <div class="welcome-text">Bem-vindo, <span class="user-name"></span>!</div>
-          <h1 class="page-title"><i class="fab fa-whatsapp mr-2"></i> Integração WhatsApp</h1>
-          <p class="page-subtitle">Conecte sua conta WhatsApp e gerencie instâncias</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-12 col-md-6">
-              <label for="wa-instance-name" class="form-label">Nome da Instância</label>
-              <input type="text" class="form-control" id="wa-instance-name" placeholder="Ex: Loja01">
-            </div>
-            <div class="col-12 col-md-6 d-flex align-items-end">
-              <button id="wa-create-instance-btn" type="button" class="btn btn-primary w-100">Criar Instância</button>
-            </div>
-          </div>
-          <hr>
-          <div id="wa-instance-info" style="display: none;">
-            <div class="mb-3">
-              <label class="form-label">Instance ID</label>
-              <input type="text" class="form-control" id="wa-instance-id" readonly>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Token da Instância</label>
-              <input type="text" class="form-control" id="wa-instance-token" readonly>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Status da Conexão</label>
-              <div id="wa-status" class="p-2 border rounded bg-light">Desconhecido</div>
-            </div>
-            <div class="mb-3 text-center">
-              <img id="wa-qr-code" src="" alt="QR Code para conexão" style="max-width: 200px; display:none;">
-              <!-- Contêiner extra para desenhar QR quando vier apenas código textual -->
-              <div id="wa-qr-drawer" style="display:none; margin-top:8px;"></div>
-            </div>
-
-            <!-- Novos campos para eventos do webhook -->
-            <div class="mb-3">
-              <label for="wa-webhook-url" class="form-label">URL do Webhook</label>
-              <input type="text" class="form-control" id="wa-webhook-url" placeholder="https://SEU-AGENTE/webhook/uazapi">
-              <small class="text-muted">Por padrão sugerimos o backend do agente IA.</small>
-            </div>
-
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="wa-events" class="form-label">Eventos a escutar</label>
-                <input type="text" class="form-control" id="wa-events" value="messages,connection">
-                <small class="text-muted">Separados por vírgula. Padrão: messages,connection.</small>
+            <!-- Histórico de Faturas -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-file-invoice mr-2"></i>
+                  Histórico de Faturas
+                </h3>
               </div>
-              <div class="col-12 col-md-6">
-                <label for="wa-exclude-events" class="form-label">Excluir dos eventos escutados</label>
-                <input type="text" class="form-control" id="wa-exclude-events" value="wasSentByApi,isGroupYes">
-                <small class="text-muted">Use exatamente estes para evitar loop e grupos: <b>wasSentByApi,isGroupYes</b></small>
-              </div>
-            </div>
-
-            <div class="mb-3 d-flex justify-content-end mt-3">
-              <button id="wa-set-webhook-btn" type="button" class="btn btn-secondary">Definir Webhook</button>
-            </div>
-            <hr>
-            <div class="row g-3">
-              <div class="col-12 col-md-4">
-                <label for="wa-test-number" class="form-label">Número Destino</label>
-                <input type="text" class="form-control" id="wa-test-number" placeholder="55DDDNNNNNNN">
-              </div>
-              <div class="col-12 col-md-5">
-                <label for="wa-test-message" class="form-label">Mensagem de Teste</label>
-                <input type="text" class="form-control" id="wa-test-message" placeholder="Digite a mensagem">
-              </div>
-              <div class="col-12 col-md-3 d-flex align-items-end">
-                <button id="wa-send-test-btn" type="button" class="btn btn-outline-primary w-100">Enviar Teste</button>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>15/10/2023</td>
+                        <td>Plano Professional - Outubro 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>15/09/2023</td>
+                        <td>Plano Professional - Setembro 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>15/08/2023</td>
+                        <td>Plano Professional - Agosto 2023</td>
+                        <td>R$ 349,00</td>
+                        <td><span class="badge badge-success">Pago</span></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download mr-1"></i>
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -988,7 +1036,152 @@
     </div>
   </div>
 
-  <!-- Modal Adicionar Produto -->
+  <!-- Modais para Métricas -->
+  <!-- Modal Conversas -->
+  <div class="modal fade" id="conversations-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-comments mr-2"></i>
+            Conversas Totais
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('conversations-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Última Mensagem</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="conversations-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Leads -->
+  <div class="modal fade" id="leads-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-user-plus mr-2"></i>
+            Leads Interessados
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('leads-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="filter-buttons mb-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="populateModalTable('leads-modal', 'all')">Todos</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="populateModalTable('leads-modal', 'Lead')">Leads</button>
+            <button class="btn btn-sm btn-outline-info" onclick="populateModalTable('leads-modal', 'Lead Qualificado')">Qualificados</button>
+            <button class="btn btn-sm btn-outline-warning" onclick="populateModalTable('leads-modal', 'Lead Quente')">Quentes</button>
+            <button class="btn btn-sm btn-outline-success" onclick="populateModalTable('leads-modal', 'Cliente')">Clientes</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>Última Mensagem</th>
+                  <th>Categoria</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Vendas -->
+  <div class="modal fade" id="sales-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            Vendas Realizadas
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('sales-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Produto</th>
+                  <th>Valor</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Satisfação -->
+  <div class="modal fade" id="satisfaction-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-check-circle mr-2"></i>
+            Taxa de Resolução
+          </h5>
+          <button type="button" class="close" onclick="closeMetricModal('satisfaction-modal')">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Avaliação</th>
+                  <th>Comentário</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="satisfaction-table-body">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+          <!-- Seção Usuários removida -->
   <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -1057,7 +1250,7 @@
     </div>
   </div>
 
-  <!-- Chatbot -->
+  <!-- Chatbot responsivo melhorado -->
   <div id="chatbot-container" class="chatbot-container">
     <div id="chatbot-toggle" class="chatbot-toggle">
       <img src="paclead.png" alt="Chatbot Icon" class="chatbot-icon">
@@ -1111,32 +1304,51 @@
   <!-- JavaScript Customizado -->
   <script src="script.js"></script>
 
-  <!-- Controle do menu mobile -->
+  <!-- Adicionando JavaScript para controle do menu mobile -->
   <script>
+    // Controle do menu mobile
     document.addEventListener('DOMContentLoaded', function() {
       const sidebarToggle = document.getElementById('sidebar-toggle');
       const sidebarOverlay = document.getElementById('sidebar-overlay');
       const body = document.body;
       const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
 
-      function toggleSidebar() { body.classList.toggle('sidebar-open'); }
-      function closeSidebar() { body.classList.remove('sidebar-open'); }
+      // Função para abrir/fechar sidebar
+      function toggleSidebar() {
+        body.classList.toggle('sidebar-open');
+      }
 
+      // Função para fechar sidebar
+      function closeSidebar() {
+        body.classList.remove('sidebar-open');
+      }
+
+      // Event listeners
       if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function(e) {
           e.preventDefault();
           toggleSidebar();
         });
       }
-      if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+      }
+
+      // Fechar sidebar ao clicar em links de navegação no mobile
       mobileNavLinks.forEach(link => {
         link.addEventListener('click', function() {
-          if (window.innerWidth <= 991.98) setTimeout(closeSidebar, 100);
+          if (window.innerWidth <= 991.98) {
+            setTimeout(closeSidebar, 100);
+          }
         });
       });
+
+      // Fechar sidebar ao redimensionar para desktop
       window.addEventListener('resize', function() {
-        if (window.innerWidth > 991.98) closeSidebar();
+        if (window.innerWidth > 991.98) {
+          closeSidebar();
+        }
       });
     });
   </script>
