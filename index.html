@@ -887,11 +887,28 @@
               <!-- Contêiner extra para desenhar QR quando vier apenas código textual -->
               <div id="wa-qr-drawer" style="display:none; margin-top:8px;"></div>
             </div>
+
+            <!-- Novos campos para eventos do webhook -->
             <div class="mb-3">
               <label for="wa-webhook-url" class="form-label">URL do Webhook</label>
-              <input type="text" class="form-control" id="wa-webhook-url" readonly>
+              <input type="text" class="form-control" id="wa-webhook-url" placeholder="https://SEU-AGENTE/webhook/uazapi">
+              <small class="text-muted">Por padrão sugerimos o backend do agente IA.</small>
             </div>
-            <div class="mb-3 d-flex justify-content-end">
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="wa-events" class="form-label">Eventos a escutar</label>
+                <input type="text" class="form-control" id="wa-events" value="messages,connection">
+                <small class="text-muted">Separados por vírgula. Padrão: messages,connection.</small>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="wa-exclude-events" class="form-label">Excluir dos eventos escutados</label>
+                <input type="text" class="form-control" id="wa-exclude-events" value="wasSentByApi,isGroupYes">
+                <small class="text-muted">Use exatamente estes para evitar loop e grupos: <b>wasSentByApi,isGroupYes</b></small>
+              </div>
+            </div>
+
+            <div class="mb-3 d-flex justify-content-end mt-3">
               <button id="wa-set-webhook-btn" type="button" class="btn btn-secondary">Definir Webhook</button>
             </div>
             <hr>
@@ -958,9 +975,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Modais para Métricas -->
-  <!-- (demais modais mantidos iguais) -->
 
   <!-- Modal Adicionar Produto -->
   <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog">
