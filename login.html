@@ -10,6 +10,9 @@
     window.__API_PREFIX__ = "/api";
   </script>
 
+  <!-- (Incremento) Shim para leitura unificada de BACKEND_BASE/API_PREFIX como no index.html -->
+  <script src="/api-base-shim.js"></script>
+
   <!-- Base tag ensures assets are resolved relative to root when the page is refreshed on a sub‑route -->
   <base href="/">
   <meta charset="UTF-8">
@@ -24,6 +27,18 @@
   <!-- Estilos globais do dashboard -->
   <link rel="stylesheet" href="style.css">
   <style>
+    /* =========================================================
+       Fallback de variáveis de tema (se style.css não definir)
+       ========================================================= */
+    :root{
+      --primary-color: #0d6efd;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --text-primary: #e5e7eb;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+    }
+
     /* Estilização específica da página de login. Esta página ocupa
        toda a tela, utilizando o tema escuro do site. O container do
        formulário é mais largo e a logomarca está maior para destacar
@@ -46,18 +61,16 @@
       /* Fundo com gradiente escuro similar ao de plataformas conhecidas */
       background: linear-gradient(135deg, #0f1c3f 0%, #171e48 35%, #2d0e3e 100%);
       overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
     }
+
     /* Estrutura principal: duas colunas em tela cheia. O wrapper ocupa toda a
        largura e altura da viewport, sem borda arredondada ou sombra. A ordem
-       dos filhos é invertida para exibir a imagem à esquerda e o formulário
+      dos filhos é invertida para exibir a imagem à esquerda e o formulário
        de login à direita. */
     .login-wrapper {
       display: flex;
       flex-direction: row-reverse; /* inverte a ordem: imagem à esquerda */
-      /* Ajustamos o tamanho do painel para deixá‑lo ainda mais amplo, mas
-         sem ocupar toda a viewport. A largura agora usa 96% da tela com
-         um limite máximo maior e a altura foi ampliada para 90% da
-         viewport, garantindo mais espaço para a imagem e formulários. */
       width: 96%;
       max-width: 1400px;
       height: 90vh;
@@ -84,27 +97,29 @@
       overflow: hidden;
       background: #101c3b;
     }
-    /* Cria formas abstratas usando gradientes radiais para simular ondas fluidas */
+
     /* Removemos os gradientes abstratos para um design mais limpo. */
     .right-panel::before,
     .right-panel::after {
       display: none;
     }
 
-    /* A imagem decorativa posicionada sobre o painel direito. Ajuste a proporção conforme necessário. */
+    /* Imagem decorativa do painel direito */
     .right-panel img {
-      /* Centraliza a imagem dentro do painel e preserva suas proporções. */
       position: absolute;
       top: 50%;
-      left: 65%;
+      left: 50%;               /* (ajuste) centraliza melhor a imagem */
       transform: translate(-50%, -50%);
-      max-width: 1032%;
-      max-height: 140%;
+      max-width: 100%;         /* (ajuste) evita estourar layout (antes: 1032%) */
+      max-height: 100%;        /* mantém dentro do painel */
       width: auto;
       height: auto;
       object-fit: contain;
       z-index: 1;
+      pointer-events: none;
+      user-select: none;
     }
+
     .login-logo img {
       height: 150px;
       width: auto;
@@ -144,6 +159,8 @@
       outline: none;
       box-shadow: none;
     }
+
+    /* Botões principais */
     .btn-primary,
     .btn-success {
       border-radius: 50px;
@@ -165,6 +182,28 @@
     .btn-success:hover {
       background-color: #1e7e34;
     }
+
+    /* Estado de carregando nos botões (incremento) */
+    .btn-loading {
+      position: relative;
+      pointer-events: none;
+      opacity: .75;
+    }
+    .btn-loading::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,.6);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
     .link-underline {
       color: var(--primary-color);
       text-decoration: underline;
@@ -188,7 +227,6 @@
     @media (max-width: 768px) {
       body {
         overflow: auto;
-        /* Background com a imagem do PAC-LEAD desfocada */
         background: linear-gradient(135deg, rgba(15, 28, 63, 0.9) 0%, rgba(23, 30, 72, 0.9) 35%, rgba(45, 14, 62, 0.9) 100%),
                     url('pacleadhumanoid.png');
         background-size: cover;
@@ -196,7 +234,6 @@
         background-attachment: fixed;
         position: relative;
       }
-      
       /* Overlay desfocado por cima da imagem de fundo */
       body::before {
         content: '';
@@ -209,7 +246,6 @@
         background: rgba(15, 28, 63, 0.7);
         z-index: -1;
       }
-      
       .login-wrapper {
         flex-direction: column;
         width: 100%;
@@ -219,7 +255,6 @@
         box-shadow: none;
         background: transparent;
       }
-      
       .left-panel {
         width: 100%;
         padding: 2rem 1.5rem;
@@ -237,27 +272,22 @@
         border-radius: 20px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
       }
-      
       .right-panel {
         display: none; /* Escondendo o painel da imagem já que agora é background */
       }
-      
       .login-logo img {
         height: 80px;
         filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
       }
-      
       .login-title {
         font-size: 1.4rem;
         margin-bottom: 0.3rem;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
-      
       .login-subtitle {
         font-size: 0.8rem;
         margin-bottom: 1.5rem;
       }
-      
       .form-control {
         padding: 0.75rem 0;
         font-size: 1rem;
@@ -267,12 +297,10 @@
         padding-left: 1rem;
         padding-right: 1rem;
       }
-      
       .form-control:focus {
         border-bottom: 2px solid var(--primary-color);
         background: rgba(255, 255, 255, 0.1);
       }
-      
       .btn-primary,
       .btn-success {
         padding: 0.875rem 1.5rem;
@@ -281,30 +309,21 @@
         box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         transition: all 0.3s ease;
       }
-      
       .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
       }
-      
       .btn-success:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
       }
-      
       .form-label {
         font-size: 0.9rem;
         margin-bottom: 0.5rem;
         font-weight: 600;
       }
-      
-      .mb-3 {
-        margin-bottom: 1.5rem !important;
-      }
-      
-      .mb-4 {
-        margin-bottom: 2rem !important;
-      }
+      .mb-3 { margin-bottom: 1.5rem !important; }
+      .mb-4 { margin-bottom: 2rem !important; }
     }
 
     @media (max-width: 480px) {
@@ -312,18 +331,9 @@
         padding: 1.5rem 1rem;
         margin:-1rem 0rem;
       }
-      
-      .login-logo img {
-        height: 190px;
-      }
-      
-      .login-title {
-        font-size: 1.3rem;
-      }
-      
-      .form-control {
-        padding: 0.75rem;
-      }
+      .login-logo img { height: 190px; }
+      .login-title { font-size: 1.3rem; }
+      .form-control { padding: 0.75rem; }
     }
 
     /* Layout landscape para mobile */
@@ -333,7 +343,13 @@
         margin: 1rem;
       }
     }
+
+    /* Acessibilidade: reduzir animações */
+    @media (prefers-reduced-motion: reduce) {
+      .btn-loading::after { animation: none; }
+    }
   </style>
+
   <!-- Se o usuário já estiver autenticado, redireciona para o dashboard -->
   <script>
     (function() {
@@ -349,6 +365,12 @@
   </script>
 </head>
 <body>
+  <noscript>
+    <div class="alert alert-warning m-3" role="alert">
+      Para usar a plataforma Helsen IA é necessário habilitar o JavaScript no navegador.
+    </div>
+  </noscript>
+
   <div class="login-wrapper">
     <!-- Lado esquerdo: formulário de autenticação -->
     <div class="left-panel">
@@ -356,52 +378,76 @@
         <img src="logoprincipal.png" alt="Helsen IA">
       </div>
       <h2 class="login-title">Bem-vindo ao Helsen IA</h2>
+      <!-- (incremento) subtítulo opcional -->
+      <p class="login-subtitle">Acesse sua conta para configurar o agente, produtos e integrações.</p>
+
       <!-- Formulário de login -->
-      <form id="login-form" autocomplete="off">
+      <form id="login-form" autocomplete="off" novalidate>
         <div class="mb-3">
           <label for="login-email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="login-email" placeholder="Digite seu email" required>
+          <input type="email" class="form-control" id="login-email" placeholder="Digite seu email"
+                 inputmode="email" autocomplete="username" required>
         </div>
-        <div class="mb-4">
+        <div class="mb-4 position-relative">
           <label for="login-password" class="form-label">Senha</label>
-          <input type="password" class="form-control" id="login-password" placeholder="Digite sua senha" required>
+          <input type="password" class="form-control" id="login-password" placeholder="Digite sua senha"
+                 autocomplete="current-password" required>
+          <!-- (incremento) Toggle de visibilidade de senha -->
+          <button type="button" id="toggle-login-password" class="btn btn-sm btn-outline-light"
+                  style="position:absolute; right:0; bottom:8px; transform:translateY(50%); padding:.15rem .5rem;">
+            <i class="fa-regular fa-eye"></i>
+          </button>
         </div>
-        <button type="submit" class="btn btn-primary w-100 mb-3">Entrar</button>
+        <button type="submit" id="login-submit" class="btn btn-primary w-100 mb-3">Entrar</button>
         <p class="toggle-text">Não tem conta? <a href="#" id="link-show-register" class="link-underline">Crie agora</a></p>
       </form>
+
       <!-- Formulário de registro (oculto inicialmente) -->
-      <form id="register-form" style="display:none;" autocomplete="off">
+      <form id="register-form" style="display:none;" autocomplete="off" novalidate>
         <div class="mb-3">
           <label for="register-name" class="form-label">Nome</label>
-          <input type="text" class="form-control" id="register-name" placeholder="Seu nome completo" required>
+          <input type="text" class="form-control" id="register-name" placeholder="Seu nome completo"
+                 autocomplete="name" required>
         </div>
         <div class="mb-3">
           <label for="register-email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="register-email" placeholder="Digite seu email" required>
+          <input type="email" class="form-control" id="register-email" placeholder="Digite seu email"
+                 inputmode="email" autocomplete="email" required>
         </div>
-  <!-- Campo para CPF ou CNPJ. Utilizamos um único campo para ambas as
-       modalidades. Somente dígitos serão enviados ao backend. -->
-  <div class="mb-3">
-    <label for="register-tax" class="form-label">CPF ou CNPJ</label>
-    <input type="text" class="form-control" id="register-tax" placeholder="Digite seu CPF ou CNPJ" required>
-  </div>
-        <div class="mb-4">
+        <!-- Campo para CPF ou CNPJ. Utilizamos um único campo para ambas as
+             modalidades. Somente dígitos serão enviados ao backend. -->
+        <div class="mb-3">
+          <label for="register-tax" class="form-label">CPF ou CNPJ</label>
+          <input type="text" class="form-control" id="register-tax" placeholder="Digite seu CPF ou CNPJ"
+                 inputmode="numeric" autocomplete="off" required>
+        </div>
+        <div class="mb-4 position-relative">
           <label for="register-password" class="form-label">Senha</label>
-          <input type="password" class="form-control" id="register-password" placeholder="Crie uma senha" required>
+          <input type="password" class="form-control" id="register-password" placeholder="Crie uma senha"
+                 autocomplete="new-password" required>
+          <!-- (incremento) Toggle de visibilidade de senha -->
+          <button type="button" id="toggle-register-password" class="btn btn-sm btn-outline-light"
+                  style="position:absolute; right:0; bottom:8px; transform:translateY(50%); padding:.15rem .5rem;">
+            <i class="fa-regular fa-eye"></i>
+          </button>
         </div>
-        <button type="submit" class="btn btn-success w-100 mb-3">Criar Conta</button>
+        <button type="submit" id="register-submit" class="btn btn-success w-100 mb-3">Criar Conta</button>
         <p class="toggle-text">Já tem conta? <a href="#" id="link-show-login" class="link-underline">Entrar</a></p>
       </form>
+
       <div id="errorMsg"></div>
     </div>
+
     <!-- Lado direito: área decorativa com formas e gradientes -->
     <div class="right-panel">
       <!-- Imagem decorativa para a tela de login. Substitua 'login-placeholder.png' pelo arquivo desejado. -->
       <img id="login-image-placeholder" src="pacleadhumanoid.png" alt="Imagem decorativa">
     </div>
   </div>
+
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <!-- Define a base do backend para o script de autenticação. Ajuste conforme seu ambiente. -->
   <script>
     window.__BACKEND_BASE__ = window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app';
@@ -412,6 +458,7 @@
       const registerForm = document.getElementById('register-form');
       const showRegisterLinks = document.querySelectorAll('#link-show-register');
       const showLoginLink = document.getElementById('link-show-login');
+
       showRegisterLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
@@ -428,6 +475,226 @@
       }
     });
   </script>
+
+  <!-- (INCREMENTO) Melhorias de UX/Segurança e fallback de autenticação -->
+  <script>
+    (function(){
+      const BACKEND_BASE = (window.__BACKEND_BASE__ || '').replace(/\/+$/, '');
+      const API_PREFIX = window.__API_PREFIX__ || '/api';
+      const ERROR_EL = () => document.getElementById('errorMsg');
+      const q = (sel) => document.querySelector(sel);
+
+      function showErr(msg){
+        const el = ERROR_EL();
+        if (!el) return;
+        el.textContent = msg || 'Houve um erro. Tente novamente.';
+        el.style.display = 'block';
+      }
+      function clearErr(){
+        const el = ERROR_EL();
+        if (!el) return;
+        el.textContent = '';
+        el.style.display = 'none';
+      }
+      function onlyDigits(str){ return (str || '').replace(/\D/g, ''); }
+      function setLoading(btn, on){
+        if (!btn) return;
+        if (on) { btn.classList.add('btn-loading'); btn.disabled = true; }
+        else { btn.classList.remove('btn-loading'); btn.disabled = false; }
+      }
+      function storeAuthData(data){
+        if (!data || typeof data !== 'object') return;
+        const token =
+          data.token || data.access_token || data.jwt ||
+          (data.data && (data.data.token || data.data.access_token || data.data.jwt));
+        const userName =
+          (data.user && (data.user.name || data.user.nome || data.user.full_name)) ||
+          data.name || data.nome || data.full_name ||
+          (data.data && data.data.user && (data.data.user.name || data.data.user.nome));
+
+        const orgId =
+          data.org_id || (data.data && data.data.org_id) || (data.user && data.user.org_id) || localStorage.getItem('org_id') || '1';
+        const flowId =
+          data.flow_id || (data.data && data.data.flow_id) || (data.user && data.user.flow_id) || localStorage.getItem('flow_id') || '1';
+
+        try {
+          if (token) localStorage.setItem('token', token);
+          if (orgId) localStorage.setItem('org_id', String(orgId));
+          if (flowId) localStorage.setItem('flow_id', String(flowId));
+          if (userName) localStorage.setItem('user_name', String(userName));
+        } catch(_) {}
+      }
+
+      // Eye toggle (mostrar/ocultar senha)
+      function bindPasswordToggle(inputId, btnId){
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if (!input || !btn) return;
+        btn.addEventListener('click', () => {
+          const isPwd = input.getAttribute('type') === 'password';
+          input.setAttribute('type', isPwd ? 'text' : 'password');
+          btn.innerHTML = isPwd ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+          input.focus();
+        });
+      }
+
+      // Indicação de CAPS LOCK
+      function bindCapsWarning(inputId){
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        el.addEventListener('keyup', (e) => {
+          const caps = e.getModifierState && e.getModifierState('CapsLock');
+          el.setAttribute('title', caps ? 'Caps Lock ativado' : '');
+        });
+      }
+
+      // Mask para CPF/CNPJ (somente dígitos)
+      function bindTaxMask(inputId){
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+          const prevLen = el.value.length;
+          el.value = el.value.replace(/\D/g, '');
+          // mantém posição do cursor de forma simples
+          const diff = prevLen - el.value.length;
+          el.setSelectionRange(Math.max(0, start - diff), Math.max(0, end - diff));
+        });
+      }
+
+      // Tenta várias rotas até autenticar (fallback se auth.js não existir)
+      async function tryMultipleEndpoints(endpoints, payload){
+        for (const path of endpoints) {
+          const url = path.startsWith('http') ? path : (BACKEND_BASE + path);
+          try {
+            const r = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!r.ok) { continue; }
+            const j = await r.json().catch(() => ({}));
+            const token =
+              j.token || j.access_token || j.jwt ||
+              (j.data && (j.data.token || j.data.access_token || j.data.jwt));
+            if (token) return j;
+          } catch(_) {}
+        }
+        throw new Error('Não foi possível autenticar.');
+      }
+
+      // Handler padrão (só será usado se auth.js não fornecer HelsenAuth)
+      const FallbackAuth = {
+        async login({ email, password }){
+          const loginPaths = [
+            `${API_PREFIX}/auth/login`,
+            `${API_PREFIX}/login`,
+            `${API_PREFIX}/users/login`,
+            `${API_PREFIX}/sessions`,
+            `/api/auth/login`,     /* redundância por segurança */
+            `/api/login`
+          ];
+          const data = await tryMultipleEndpoints(loginPaths, { email, password });
+          storeAuthData(data);
+          return data;
+        },
+        async register({ name, email, password, tax_id }){
+          const regPaths = [
+            `${API_PREFIX}/auth/register`,
+            `${API_PREFIX}/register`,
+            `${API_PREFIX}/users`,
+            `${API_PREFIX}/signup`,
+            `/api/auth/register`,  /* redundância por segurança */
+            `/api/register`
+          ];
+          const data = await tryMultipleEndpoints(regPaths, { name, email, password, tax_id });
+          storeAuthData(data);
+          return data;
+        }
+      };
+
+      // Se auth.js expuser HelsenAuth, usamos ele; caso contrário, usamos o fallback
+      if (!window.HelsenAuth) window.HelsenAuth = FallbackAuth;
+
+      // Binds de UI
+      document.addEventListener('DOMContentLoaded', () => {
+        bindPasswordToggle('login-password', 'toggle-login-password');
+        bindPasswordToggle('register-password', 'toggle-register-password');
+        bindCapsWarning('login-password');
+        bindCapsWarning('register-password');
+        bindTaxMask('register-tax');
+
+        // Preenche email lembrado (se existir)
+        try {
+          const remembered = localStorage.getItem('remember_email');
+          if (remembered && document.getElementById('login-email')) {
+            document.getElementById('login-email').value = remembered;
+          }
+        } catch(_) {}
+
+        // Submissão de login
+        const loginForm = document.getElementById('login-form');
+        if (loginForm && !loginForm.dataset.bound) {
+          loginForm.dataset.bound = '1';
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); e.stopImmediatePropagation();
+            clearErr();
+
+            const email = (q('#login-email')?.value || '').trim();
+            const password = (q('#login-password')?.value || '').trim();
+            if (!email || !password) { showErr('Preencha email e senha.'); return; }
+
+            const btn = document.getElementById('login-submit');
+            setLoading(btn, true);
+            try {
+              await window.HelsenAuth.login({ email, password });
+              try { localStorage.setItem('remember_email', email); } catch(_) {}
+              window.location.href = 'index.html';
+            } catch(err) {
+              console.error(err);
+              showErr('Credenciais inválidas ou servidor indisponível.');
+            } finally {
+              setLoading(btn, false);
+            }
+          }, { once: false });
+        }
+
+        // Submissão de registro
+        const registerForm = document.getElementById('register-form');
+        if (registerForm && !registerForm.dataset.bound) {
+          registerForm.dataset.bound = '1';
+          registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); e.stopImmediatePropagation();
+            clearErr();
+
+            const name = (q('#register-name')?.value || '').trim();
+            const email = (q('#register-email')?.value || '').trim();
+            const tax = onlyDigits(q('#register-tax')?.value || '');
+            const password = (q('#register-password')?.value || '').trim();
+            if (!name || !email || !password || !tax) {
+              showErr('Preencha todos os campos do cadastro.');
+              return;
+            }
+
+            const btn = document.getElementById('register-submit');
+            setLoading(btn, true);
+            try {
+              await window.HelsenAuth.register({ name, email, password, tax_id: tax });
+              // cadastrado e autenticado
+              window.location.href = 'index.html';
+            } catch(err) {
+              console.error(err);
+              showErr('Não foi possível criar sua conta. Tente mais tarde.');
+            } finally {
+              setLoading(btn, false);
+            }
+          }, { once: false });
+        }
+      });
+    })();
+  </script>
+
   <!-- Script de autenticação que envia os dados ao backend e lida com erros/sucesso -->
   <script src="auth.js"></script>
 </body>
