@@ -739,6 +739,8 @@ async function loadCompany() {
 
 // ===== PERFIL =====
 function saveProfile() {
+  // (incremento) persiste o perfil (reutiliza saveAgentConfig localStorage)
+  try { saveAgentConfig(); } catch (_) {}
   const modal = new bootstrap.Modal(document.getElementById('successModal'));
   modal.show();
 }
@@ -878,6 +880,11 @@ async function addProduct() {
   const created = await createProductOnBackend(product);
   if (created) {
     showNotification("Produto adicionado com sucesso!", "success");
+    // (incremento) esconder o modal após sucesso
+    try {
+      const modalEl = document.getElementById('addProductModal');
+      if (modalEl) (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).hide();
+    } catch (_) {}
   } else {
     showNotification("Erro ao adicionar produto.", "danger");
   }
@@ -899,7 +906,7 @@ function updateProductTable() {
   }
   tbody.innerHTML = products.map(product => `
     <tr>
-      <td>
+      <td class="d-none d-md-table-cell">
         ${product.image ?
           `<img src="${product.image}" alt="${product.name}" class="product-image">` :
           `<div class="product-placeholder"><i class="fas fa-image"></i></div>`
@@ -909,9 +916,9 @@ function updateProductTable() {
         <strong>${product.name}</strong><br>
         <small class="text-muted">${product.description}</small>
       </td>
-      <td><span class="badge badge-primary">${product.category}</span></td>
+      <td class="d-none d-lg-table-cell"><span class="badge badge-primary">${product.category}</span></td>
       <td><span class="price-tag">R$ ${product.price.toFixed(2)}</span></td>
-      <td><span class="badge ${product.status === 'active' ? 'badge-success' : 'badge-secondary'}">${product.status === 'active' ? 'Ativo' : 'Inativo'}</span></td>
+      <td class="d-none d-sm-table-cell"><span class="badge ${product.status === 'active' ? 'badge-success' : 'badge-secondary'}">${product.status === 'active' ? 'Ativo' : 'Inativo'}</span></td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="openEditProduct(${product.id})" title="Editar produto"><i class="fas fa-edit"></i></button>
         <button class="btn btn-sm btn-outline-danger" onclick="removeProduct(${product.id})" title="Remover produto"><i class="fas fa-trash"></i></button>
@@ -1549,3 +1556,70 @@ document.addEventListener('DOMContentLoaded', function() {
   const sendTestBtn = document.getElementById('wa-send-test-btn');
   if (sendTestBtn) sendTestBtn.addEventListener('click', sendWhatsAppTest);
 });
+
+/* =========================================================
+   (INCREMENTOS) Qualidade de Vida e Robustez
+   ========================================================= */
+
+// Deep-link simples por caminho (ex.: /analise, /empresa etc)
+document.addEventListener('DOMContentLoaded', () => {
+  const path = (location.pathname || '').toLowerCase();
+  const routeToSection = {
+    '/analise': 'analysis',
+    '/agente': 'agent-config',
+    '/produtos': 'products',
+    '/pagamentos': 'payments',
+    '/empresa': 'company',
+    '/usuarios': 'users',
+    '/whatsapp': 'wa'
+  };
+  const sec = routeToSection[path];
+  if (sec) {
+    try { showSection(sec); } catch (_) {}
+  }
+});
+
+// Pausa polling de status quando a aba estiver oculta
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (waPollInterval) { clearInterval(waPollInterval); waPollInterval = null; }
+  } else {
+    if (waCurrentInstance && waCurrentToken && !waPollInterval) {
+      waPollInterval = setInterval(updateWhatsAppStatus, 4000);
+    }
+  }
+});
+
+// Limpeza ao descarregar a página
+window.addEventListener('beforeunload', () => {
+  if (waPollInterval) clearInterval(waPollInterval);
+});
+
+/* =========================================================
+   Exposição global (para chamadas inline no HTML)
+   ========================================================= */
+window.showSection = showSection;
+window.logout = logout;
+
+window.nextTab = nextTab;
+window.previousTab = previousTab;
+
+window.toggleWhatsAppConfig = toggleWhatsAppConfig;
+window.toggleSiteLinkConfig = toggleSiteLinkConfig;
+window.toggleProductLinkConfig = toggleProductLinkConfig;
+
+window.openMetricModal = openMetricModal;
+window.closeMetricModal = closeMetricModal;
+window.populateModalTable = populateModalTable;
+window.filterTable = filterTable;
+
+window.addProduct = addProduct;
+window.openEditProduct = openEditProduct;
+window.saveEditProduct = saveEditProduct;
+window.removeProduct = removeProduct;
+
+window.saveProfile = saveProfile;
+
+window.createWhatsAppInstance = createWhatsAppInstance;
+window.setWhatsAppWebhook = setWhatsAppWebhook;
+window.sendWhatsAppTest = sendWhatsAppTest;
