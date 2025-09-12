@@ -40,6 +40,15 @@ const defaultHeaders = (() => {
     'X-Flow-ID': flowId
   };
   if (authHeader) headers['Authorization'] = authHeader;
+
+  // (AJUSTE) inclui headers de instância se já existirem no storage
+  try {
+    const inst = localStorage.getItem('wa_instance');
+    const instTok = localStorage.getItem('wa_token');
+    if (inst) headers['X-Instance-ID'] = inst;
+    if (instTok) headers['X-Instance-Token'] = instTok;
+  } catch (_) {}
+
   return headers;
 })();
 
@@ -182,6 +191,11 @@ function persistWhatsAppInstance() {
   try {
     if (waCurrentInstance) localStorage.setItem('wa_instance', waCurrentInstance);
     if (waCurrentToken) localStorage.setItem('wa_token', waCurrentToken);
+    // (AJUSTE) atualiza defaultHeaders para refletir instância atual
+    try {
+      if (waCurrentInstance) defaultHeaders['X-Instance-ID'] = waCurrentInstance;
+      if (waCurrentToken) defaultHeaders['X-Instance-Token'] = waCurrentToken;
+    } catch (_) {}
   } catch (_) {}
 }
 function restoreWhatsAppInstance() {
@@ -201,6 +215,11 @@ function restoreWhatsAppInstance() {
       if (webhookEl && !webhookEl.value) {
         webhookEl.value = `${BACKEND_BASE}/api/webhooks/wa/${encodeURIComponent(waCurrentInstance)}`;
       }
+      // (AJUSTE) garante headers de instância em requisições subsequentes
+      try {
+        defaultHeaders['X-Instance-ID'] = waCurrentInstance;
+        defaultHeaders['X-Instance-Token'] = waCurrentToken;
+      } catch (_) {}
       if (waPollInterval) clearInterval(waPollInterval);
       updateWhatsAppStatus();
       waPollInterval = setInterval(updateWhatsAppStatus, 4000);
@@ -553,6 +572,13 @@ async function uploadImage(file) {
     'X-Flow-ID': defaultHeaders['X-Flow-ID']
   };
   if (defaultHeaders['Authorization']) headers['Authorization'] = defaultHeaders['Authorization'];
+  // (AJUSTE) inclui instância no upload se existir
+  try {
+    const inst = localStorage.getItem('wa_instance');
+    const instTok = localStorage.getItem('wa_token');
+    if (inst) headers['X-Instance-ID'] = inst;
+    if (instTok) headers['X-Instance-Token'] = instTok;
+  } catch (_) {}
   const res = await fetch(`${BACKEND_BASE}/api/upload`, { method: 'POST', headers, body: formData });
   if (!res.ok) throw new Error('Falha ao enviar imagem');
   const data = await res.json();
@@ -713,6 +739,13 @@ function logout() {
     localStorage.removeItem('org_id');
     localStorage.removeItem('flow_id');
     localStorage.removeItem('user_name');
+    // (AJUSTE) limpar dados da instância e headers associados
+    localStorage.removeItem('wa_instance');
+    localStorage.removeItem('wa_token');
+    try {
+      delete defaultHeaders['X-Instance-ID'];
+      delete defaultHeaders['X-Instance-Token'];
+    } catch (_) {}
   } catch (_) {}
   window.location.href = 'login.html';
 }
@@ -1417,6 +1450,15 @@ class Chatbot {
           } catch (_) {}
           const h = { 'Content-Type': 'application/json', 'X-Org-ID': orgId, 'X-Flow-ID': flowId };
           if (authHeader) h['Authorization'] = authHeader;
+
+          // (AJUSTE) inclui instância no chat se disponível
+          try {
+            const inst = localStorage.getItem('wa_instance');
+            const instTok = localStorage.getItem('wa_token');
+            if (inst) h['X-Instance-ID'] = inst;
+            if (instTok) h['X-Instance-Token'] = instTok;
+          } catch (_) {}
+
           return h;
         })();
 
@@ -1515,6 +1557,15 @@ class Chatbot {
         } catch (_) {}
         const h = { 'X-Org-ID': orgId, 'X-Flow-ID': flowId };
         if (authHeader) h['Authorization'] = authHeader;
+
+        // (AJUSTE) inclui instância também no upload de visão
+        try {
+          const inst = localStorage.getItem('wa_instance');
+          const instTok = localStorage.getItem('wa_token');
+          if (inst) h['X-Instance-ID'] = inst;
+          if (instTok) h['X-Instance-Token'] = instTok;
+        } catch (_) {}
+
         return h;
       })();
 
