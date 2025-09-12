@@ -1791,3 +1791,111 @@ body {
     drop-shadow(0 0 12px rgba(255, 0, 204, .35));
   pointer-events: none;
 }
+
+
+/* ===================================================================== */
+/* =====================  INCREMENTOS NECESSÁRIOS  ===================== */
+/* (Adições para suportar script.js e auth.js, sem remover nada)        */
+/* ===================================================================== */
+
+/* 1) Estado de carregamento em botões (usado no auth.js) */
+.btn.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: .85;
+}
+.btn.btn-loading::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.45);
+  border-top-color: #fff;
+  transform: translateY(-50%);
+  animation: btnspin .75s linear infinite;
+}
+@keyframes btnspin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+/* Para botões escuros/outline */
+.btn-outline-secondary.btn-loading::after {
+  border-color: rgba(224,224,224,.45);
+  border-top-color: #e0e0e0;
+}
+
+/* 2) Placeholders de produto + imagem padronizada (usado no script.js) */
+.product-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+.product-placeholder {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: repeating-conic-gradient(from 45deg, rgba(255,255,255,.05) 0 10deg, transparent 10deg 20deg);
+  border-radius: var(--border-radius);
+  border: 1px dashed var(--border-color);
+  font-size: 1rem;
+}
+
+/* 3) Clamp também para a <small class="text-muted"> (descrição sob o nome) */
+.products-table td:nth-child(2) small.text-muted {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 48ch;
+}
+
+/* 4) Drawer de QR code (fallback quando vier apenas texto) */
+#wa-qr-drawer {
+  display: none;
+  text-align: center;
+}
+#wa-qr-drawer canvas {
+  display: block;
+  margin: 0 auto;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+}
+
+/* 5) Evita scroll do body quando a sidebar está aberta no mobile */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* 6) Fallback visual do preview de anexo do chatbot (script também seta inline) */
+#chatbot-attachment-preview {
+  position: absolute;
+  bottom: 68px;
+  right: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  z-index: 2;
+}
+#chatbot-attachment-preview button {
+  padding: .15rem .4rem;
+}
+
+/* 7) Pequeno refinamento para descrição não quebrar layout em telas muito estreitas */
+@media (max-width: 420px) {
+  .products-table td:nth-child(2) small.text-muted {
+    max-width: 36ch;
+  }
+}
