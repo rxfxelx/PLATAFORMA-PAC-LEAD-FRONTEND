@@ -8,6 +8,11 @@
   */
   window.__BACKEND_BASE__ = "https://plataforma-pac-lead-backend-production.up.railway.app";
   window.__API_PREFIX__ = "/api";
+
+  /* (ADICIONADO) Override opcional do domínio do AGENTE.
+     Se quiser forçar o agente a outro domínio sem mexer no script, defina aqui.
+     Caso não defina, o script usará o padrão de produção automaticamente. */
+  window.__AGENT_BACKEND_BASE__ = "https://paclead-agente-backend-production.up.railway.app";
 </script>
 
   <meta charset="UTF-8">
@@ -442,8 +447,8 @@
             <!-- Novos campos para eventos do webhook -->
             <div class="mb-3">
               <label for="wa-webhook-url" class="form-label">URL do Webhook</label>
-              <input type="text" class="form-control" id="wa-webhook-url" placeholder="https://SEU-AGENTE/webhook/uazapi">
-              <small class="text-muted">Por padrão sugerimos o backend do agente IA.</small>
+              <input type="text" class="form-control" id="wa-webhook-url" placeholder="(deixe em branco para usar o padrão da plataforma)">
+              <small class="text-muted">Deixe em branco para usar o endpoint da <b>Plataforma PackLead</b> (recomendado). Se preferir apontar direto para seu Agente, informe a URL aqui.</small>
             </div>
 
             <div class="row g-3">
