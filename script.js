@@ -1208,6 +1208,8 @@ async function createPerformanceChart() {
 // ===== INICIALIZAÇÃO =====
 document.addEventListener('DOMContentLoaded', function() {
   loadAgentConfig();
+  // (NOVO) também busca config persistida no backend e sobrescreve o formulário
+  try { loadAgentConfigFromBackend(); } catch (_) {}
   updateNavigationButtons();
   document.querySelectorAll('.nav-tabs .nav-link').forEach(tab => {
     tab.addEventListener('click', function(e) {
@@ -1248,6 +1250,8 @@ function saveAgentConfig() {
     profileCustom: form.querySelector("#agent-profile-custom").value.trim()
   };
   localStorage.setItem("agentConfig", JSON.stringify(config));
+  // (NOVO) persiste também no backend (idempotente)
+  try { persistAgentConfigToBackend(config); } catch (_) {}
   showNotification("Configurações salvas com sucesso!", "success");
 }
 function loadAgentConfig() {
@@ -1265,6 +1269,59 @@ function loadAgentConfig() {
     }
   } catch (error) {
     console.error("Erro ao carregar configurações:", error);
+  }
+}
+
+// (NOVO) Busca config do backend e atualiza formulário/localStorage
+async function loadAgentConfigFromBackend() {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/agent-config`, { headers: defaultHeaders });
+    if (!res.ok) return;
+    const data = await res.json();
+    const form = document.getElementById("agent-config-form");
+    if (form) {
+      if (typeof data.name === 'string') form.querySelector("#agent-name").value = data.name || "";
+      if (typeof data.communicationStyle === 'string') form.querySelector("#communication-style").value = data.communicationStyle || "";
+      if (typeof data.sector === 'string') form.querySelector("#agent-sector").value = data.sector || "";
+      if (typeof data.profileType === 'string') form.querySelector("#agent-profile-type").value = data.profileType || "";
+      if (typeof data.profileCustom === 'string') form.querySelector("#agent-profile-custom").value = data.profileCustom || "";
+      // persiste também no localStorage (mantém compatibilidade)
+      const merged = {
+        name: form.querySelector("#agent-name").value.trim(),
+        communicationStyle: form.querySelector("#communication-style").value,
+        sector: form.querySelector("#agent-sector").value,
+        profileType: form.querySelector("#agent-profile-type").value,
+        profileCustom: form.querySelector("#agent-profile-custom").value.trim()
+      };
+      localStorage.setItem("agentConfig", JSON.stringify(merged));
+    }
+  } catch (e) {
+    console.warn('agent-config backend indisponível', e);
+  }
+}
+
+// (NOVO) Envia PUT /api/agent-config
+async function persistAgentConfigToBackend(config) {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/agent-config`, {
+      method: 'PUT',
+      headers: defaultHeaders,
+      body: JSON.stringify({
+        name: config.name || '',
+        communicationStyle: config.communicationStyle || '',
+        sector: config.sector || '',
+        profileType: config.profileType || '',
+        profileCustom: config.profileCustom || '',
+        basePrompt: '' // opcional; deixar vazio aqui para usar default do servidor
+      })
+    });
+    // Não interrompe UX se falhar
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      console.warn('persistAgentConfigToBackend falhou:', res.status, t);
+    }
+  } catch (e) {
+    console.warn('persistAgentConfigToBackend erro:', e);
   }
 }
 
