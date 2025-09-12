@@ -17,8 +17,8 @@ let waPollInterval = null;
 
 // ===== BACKEND URLs =====
 const BACKEND_BASE = (window.__BACKEND_BASE__ || 'https://plataforma-pac-lead-backend-production.up.railway.app').replace(/\/+$/, '');
-// URL do AGENTE PackLead (para receber o webhook diretamente)
-const AGENT_BACKEND_BASE = 'https://paclead-agente-backend-production.up.railway.app';
+// URL do AGENTE PackLead (permanece disponível; por padrão agora sugerimos o webhook da PLATAFORMA)
+const AGENT_BACKEND_BASE = (window.__AGENT_BACKEND_BASE__ || 'https://paclead-agente-backend-production.up.railway.app').replace(/\/+$/, '');
 const VISION_UPLOAD_URL = BACKEND_BASE + '/api/vision/upload';
 
 // Define cabeçalhos padrão utilizados em todas as chamadas à API.
@@ -177,6 +177,37 @@ async function tryFetchQrFallback() {
    WHATSAPP (uazapi)
    ========================================================= */
 
+// Persiste/recupera a instância atual no localStorage
+function persistWhatsAppInstance() {
+  try {
+    if (waCurrentInstance) localStorage.setItem('wa_instance', waCurrentInstance);
+    if (waCurrentToken) localStorage.setItem('wa_token', waCurrentToken);
+  } catch (_) {}
+}
+function restoreWhatsAppInstance() {
+  try {
+    const inst = localStorage.getItem('wa_instance');
+    const tok = localStorage.getItem('wa_token');
+    if (inst && tok) {
+      waCurrentInstance = inst;
+      waCurrentToken = tok;
+      const infoDiv = document.getElementById('wa-instance-info');
+      if (infoDiv) infoDiv.style.display = 'block';
+      const idEl = document.getElementById('wa-instance-id');
+      const tokEl = document.getElementById('wa-instance-token');
+      if (idEl) idEl.value = waCurrentInstance;
+      if (tokEl) tokEl.value = waCurrentToken;
+      const webhookEl = document.getElementById('wa-webhook-url');
+      if (webhookEl && !webhookEl.value) {
+        webhookEl.value = `${BACKEND_BASE}/api/webhooks/wa/${encodeURIComponent(waCurrentInstance)}`;
+      }
+      if (waPollInterval) clearInterval(waPollInterval);
+      updateWhatsAppStatus();
+      waPollInterval = setInterval(updateWhatsAppStatus, 4000);
+    }
+  } catch (_) {}
+}
+
 // Cria uma nova instância via backend e já mostra o QR quando possível
 async function createWhatsAppInstance() {
   const name = (document.getElementById('wa-instance-name')?.value || '').trim();
@@ -210,9 +241,10 @@ async function createWhatsAppInstance() {
     if (idEl) idEl.value = waCurrentInstance || '';
     if (tokEl) tokEl.value = waCurrentToken || '';
 
-    // Sugere webhook direto no AGENTE PackLead
+    // >>> Ajuste: sugerir webhook da PLATAFORMA (que encaminha para o Agente e loga no banco)
     const webhookEl = document.getElementById('wa-webhook-url');
-    if (webhookEl) webhookEl.value = `${AGENT_BACKEND_BASE}/webhook/uazapi`;
+    if (webhookEl) webhookEl.value = `${BACKEND_BASE}/api/webhooks/wa/${encodeURIComponent(waCurrentInstance)}`;
+    // (mantemos AGENT_BACKEND_BASE disponível se você quiser trocar manualmente)
 
     // Se veio payload connect, tenta mostrar QR imediatamente
     const statusEl = document.getElementById('wa-status');
@@ -223,6 +255,9 @@ async function createWhatsAppInstance() {
 
     const initialQr = extractQrFrom(c) || extractQrFrom(data);
     renderQr(initialQr);
+
+    // Persiste instância
+    persistWhatsAppInstance();
 
     // Começa o polling
     if (waPollInterval) clearInterval(waPollInterval);
@@ -291,7 +326,14 @@ async function setWhatsAppWebhook() {
     alert('Crie uma instância primeiro.');
     return;
   }
-  const url = document.getElementById('wa-webhook-url')?.value.trim();
+  // Se o campo estiver vazio, preenche automaticamente com o endpoint da PLATAFORMA
+  let url = (document.getElementById('wa-webhook-url')?.value || '').trim();
+  if (!url) {
+    url = `${BACKEND_BASE}/api/webhooks/wa/${encodeURIComponent(waCurrentInstance)}`;
+    const webhookEl = document.getElementById('wa-webhook-url');
+    if (webhookEl) webhookEl.value = url;
+  }
+
   const eventsStr = document.getElementById('wa-events')?.value || 'messages,connection';
   const excludeStr = document.getElementById('wa-exclude-events')?.value || 'wasSentByApi,isGroupYes';
   const events = parseList(eventsStr, ['messages','connection']);
@@ -338,7 +380,8 @@ async function sendWhatsAppTest() {
     alert('Crie uma instância primeiro.');
     return;
   }
-  const to = document.getElementById('wa-test-number')?.value.trim();
+  const toRaw = document.getElementById('wa-test-number')?.value || '';
+  const to = toRaw.trim();
   const text = document.getElementById('wa-test-message')?.value.trim();
   if (!to || !text) {
     alert('Informe o número e a mensagem.');
@@ -1146,6 +1189,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (document.getElementById('analysis').style.display !== 'none') {
     createPerformanceChart();
   }
+  // Restaura instância WA se existir
+  restoreWhatsAppInstance();
+
   fetchProducts();
   loadAnalytics();
   console.log('Sistema Helsen IA inicializado com sucesso!');
